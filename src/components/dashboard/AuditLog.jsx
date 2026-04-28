@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Shield,
   AlertTriangle,
@@ -7,54 +7,58 @@ import {
   Trash2,
   Search,
   RefreshCw,
+  BarChart3,
+  Activity,
 } from 'lucide-react';
-import {
-  AuditCategory,
-  AuditSeverity,
-  exportAuditCsv,
-  exportAuditJson,
-  clearAuditLog,
-  verifyAuditChain,
-} from '../../utils/audit.js';
-import {
-  useAuditLog,
-  useAuditStats,
-  useSecurityMonitor,
-} from '../../hooks/useAudit.js';
+import auditTrail from '../../lib/auditTrail.js';
 
 const SEVERITY_COLORS = {
-  [AuditSeverity.INFO]:     'var(--cyan)',
-  [AuditSeverity.LOW]:      'var(--text-secondary)',
-  [AuditSeverity.MEDIUM]:   'var(--yellow)',
-  [AuditSeverity.HIGH]:     'var(--orange)',
-  [AuditSeverity.CRITICAL]: 'var(--red)',
+  info:     'var(--cyan)',
+  low:      'var(--text-secondary)',
+  medium:   'var(--yellow)',
+  high:     'var(--orange)',
+  critical: 'var(--red)',
+  warning:  'var(--orange)',
+  error:    'var(--red)',
 };
 
-const OUTCOME_COLORS = {
-  success: 'var(--green)',
-  failure: 'var(--red)',
-  denied:  'var(--orange)',
+const TYPE_COLORS = {
+  USER_ACTION: 'var(--blue)',
+  API_CALL: 'var(--green)',
+  DATA_CHANGE: 'var(--purple)',
+  SECURITY_EVENT: 'var(--red)',
+  SECURITY_ALERT: 'var(--red)',
+  ERROR: 'var(--red)',
+  SYSTEM: 'var(--cyan)',
 };
 
 export default function AuditLog() {
-  const [category, setCategory] = useState('');
+  const [type, setType] = useState('');
   const [severity, setSeverity] = useState('');
   const [search, setSearch] = useState('');
-  const [integrity, setIntegrity] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const filters = useMemo(
     () => ({
-      category: category || undefined,
+      type: type || undefined,
       severity: severity || undefined,
       search: search || undefined,
-      limit: 500,
     }),
-    [category, severity, search],
+    [type, severity, search],
   );
 
-  const { entries, refresh } = useAuditLog(filters);
-  const stats = useAuditStats();
-  const { alerts, clear: clearAlerts } = useSecurityMonitor();
+  useEffect(() => {
+    // Load events and stats
+    const filteredEvents = auditTrail.getEvents(filters);
+    setEvents(filteredEvents.slice(0, 500)); // Limit to 500 for display
+    setStats(auditTrail.getStatistics());
+  }, [filters, refreshKey]);
+
+  const refresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   const downloadFile = (filename, mime, content) => {
     const blob = new Blob([content], { type: mime });
@@ -68,25 +72,25 @@ export default function AuditLog() {
 
   const handleExport = (format) => {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    if (format === 'json') {
-      downloadFile(`audit-${stamp}.json`, 'application/json', exportAuditJson(entries));
-    } else {
-      downloadFile(`audit-${stamp}.csv`, 'text/csv', exportAuditCsv(entries));
+    try {
+      const content = auditTrail.exportEvents(format, filters);
+      const mime = format === 'json' ? 'application/json' : 
+                   format === 'csv' ? 'text/csv' : 'text/plain';
+      downloadFile(`audit-${stamp}.${format}`, mime, content);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed: ' + error.message);
     }
-  };
-
-  const handleVerify = async () => {
-    setIntegrity({ checking: true });
-    const result = await verifyAuditChain();
-    setIntegrity(result);
   };
 
   const handleClear = () => {
     if (confirm('Clear all audit entries? This action is not reversible.')) {
-      clearAuditLog();
+      auditTrail.clearEvents();
       refresh();
     }
   };
+
+  const securityAlerts = auditTrail.getSecurityAlerts();
 
   return (
     <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -104,38 +108,15 @@ export default function AuditLog() {
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <ToolbarButton onClick={refresh} icon={<RefreshCw size={14} />} label="Refresh" />
-          <ToolbarButton onClick={handleVerify} icon={<CheckCircle size={14} />} label="Verify Chain" />
           <ToolbarButton onClick={() => handleExport('json')} icon={<Download size={14} />} label="Export JSON" />
           <ToolbarButton onClick={() => handleExport('csv')} icon={<Download size={14} />} label="Export CSV" />
+          <ToolbarButton onClick={() => handleExport('txt')} icon={<Download size={14} />} label="Export TXT" />
           <ToolbarButton onClick={handleClear} icon={<Trash2 size={14} />} label="Clear" danger />
         </div>
       </div>
 
-      {/* Integrity status */}
-      {integrity && !integrity.checking && (
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: 'var(--radius-md)',
-            background: integrity.valid ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-            border: `1px solid ${integrity.valid ? 'var(--green)' : 'var(--red)'}`,
-            color: integrity.valid ? 'var(--green)' : 'var(--red)',
-            fontSize: '13px',
-            fontFamily: 'var(--font-mono)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          {integrity.valid ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-          {integrity.valid
-            ? `Chain valid (${stats.total} entries)`
-            : `Chain broken at index ${integrity.brokenAt}: ${integrity.reason}`}
-        </div>
-      )}
-
       {/* Live alerts */}
-      {alerts.length > 0 && (
+      {securityAlerts.length > 0 && (
         <div
           style={{
             background: 'rgba(239,68,68,0.05)',
@@ -144,33 +125,35 @@ export default function AuditLog() {
             padding: '16px 20px',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ fontWeight: 700, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={16} />
-              Live Security Alerts ({alerts.length})
-            </div>
-            <button onClick={clearAlerts} style={smallButtonStyle}>Dismiss</button>
+          <div style={{ fontWeight: 700, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <AlertTriangle size={16} />
+            Security Alerts ({securityAlerts.length})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
-            {alerts.map((a, i) => (
+            {securityAlerts.slice(0, 5).map((alert, i) => (
               <div key={i} style={{ color: 'var(--text-primary)' }}>
-                <span style={{ color: 'var(--red)', fontWeight: 700 }}>[{a.kind}]</span>{' '}
-                actor=<code>{a.actor ?? a.action}</code> count={a.count}
+                <span style={{ color: 'var(--red)', fontWeight: 700 }}>[{alert.type}]</span>{' '}
+                {alert.message}
               </div>
             ))}
+            {securityAlerts.length > 5 && (
+              <div style={{ color: 'var(--text-muted)' }}>... and {securityAlerts.length - 5} more</div>
+            )}
           </div>
         </div>
       )}
 
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-        <StatCard label="Total" value={stats.total} color="var(--cyan)" />
-        <StatCard label="Critical" value={stats.bySeverity[AuditSeverity.CRITICAL] ?? 0} color="var(--red)" />
-        <StatCard label="High" value={stats.bySeverity[AuditSeverity.HIGH] ?? 0} color="var(--orange)" />
-        <StatCard label="Medium" value={stats.bySeverity[AuditSeverity.MEDIUM] ?? 0} color="var(--yellow)" />
-        <StatCard label="Failures" value={stats.byOutcome.failure ?? 0} color="var(--red)" />
-        <StatCard label="Denied" value={stats.byOutcome.denied ?? 0} color="var(--orange)" />
-      </div>
+      {stats && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+          <StatCard label="Total Events" value={stats.totalEvents} color="var(--cyan)" icon={<Activity size={16} />} />
+          <StatCard label="Last 24h" value={stats.last24hEvents} color="var(--blue)" icon={<BarChart3 size={16} />} />
+          <StatCard label="Security Alerts" value={stats.securityAlerts} color="var(--red)" icon={<AlertTriangle size={16} />} />
+          <StatCard label="Errors" value={stats.errors} color="var(--orange)" icon={<AlertTriangle size={16} />} />
+          <StatCard label="API Calls" value={stats.apiCalls} color="var(--green)" icon={<Activity size={16} />} />
+          <StatCard label="Last 7d" value={stats.last7dEvents} color="var(--purple)" icon={<BarChart3 size={16} />} />
+        </div>
+      )}
 
       {/* Filters */}
       <div
@@ -197,17 +180,25 @@ export default function AuditLog() {
             style={{ ...inputStyle, paddingLeft: '32px' }}
           />
         </div>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle}>
-          <option value="">All categories</option>
-          {Object.values(AuditCategory).map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
+        <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
+          <option value="">All types</option>
+          <option value="USER_ACTION">User Actions</option>
+          <option value="API_CALL">API Calls</option>
+          <option value="DATA_CHANGE">Data Changes</option>
+          <option value="SECURITY_EVENT">Security Events</option>
+          <option value="SECURITY_ALERT">Security Alerts</option>
+          <option value="ERROR">Errors</option>
+          <option value="SYSTEM">System</option>
         </select>
         <select value={severity} onChange={(e) => setSeverity(e.target.value)} style={inputStyle}>
           <option value="">All severities</option>
-          {Object.values(AuditSeverity).map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
+          <option value="info">Info</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+          <option value="warning">Warning</option>
+          <option value="error">Error</option>
         </select>
       </div>
 
@@ -220,9 +211,9 @@ export default function AuditLog() {
           overflow: 'hidden',
         }}
       >
-        {entries.length === 0 ? (
+        {events.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            No audit entries match the current filters.
+            No audit events match the current filters.
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -230,17 +221,16 @@ export default function AuditLog() {
               <thead>
                 <tr style={{ background: 'var(--bg-elevated)', textAlign: 'left' }}>
                   <th style={cellStyle}>Time</th>
+                  <th style={cellStyle}>Type</th>
                   <th style={cellStyle}>Severity</th>
-                  <th style={cellStyle}>Category</th>
-                  <th style={cellStyle}>Action</th>
-                  <th style={cellStyle}>Actor</th>
-                  <th style={cellStyle}>Outcome</th>
+                  <th style={cellStyle}>Message</th>
+                  <th style={cellStyle}>User ID</th>
                   <th style={cellStyle}>Details</th>
                 </tr>
               </thead>
               <tbody>
-                {entries.map((e) => (
-                  <AuditRow key={e.id} entry={e} />
+                {events.map((event) => (
+                  <AuditRow key={event.id} event={event} />
                 ))}
               </tbody>
             </table>
@@ -251,7 +241,7 @@ export default function AuditLog() {
   );
 }
 
-function AuditRow({ entry }) {
+function AuditRow({ event }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -259,7 +249,7 @@ function AuditRow({ entry }) {
         onClick={() => setOpen((o) => !o)}
         style={{ cursor: 'pointer', borderTop: '1px solid var(--border)' }}
       >
-        <td style={cellStyle}>{new Date(entry.timestamp).toLocaleTimeString()}</td>
+        <td style={cellStyle}>{new Date(event.timestamp).toLocaleTimeString()}</td>
         <td style={cellStyle}>
           <span
             style={{
@@ -268,24 +258,35 @@ function AuditRow({ entry }) {
               fontSize: '10px',
               fontWeight: 700,
               textTransform: 'uppercase',
-              color: SEVERITY_COLORS[entry.severity],
-              border: `1px solid ${SEVERITY_COLORS[entry.severity]}`,
+              color: TYPE_COLORS[event.type] || 'var(--text-secondary)',
+              border: `1px solid ${TYPE_COLORS[event.type] || 'var(--border)'}`,
             }}
           >
-            {entry.severity}
+            {event.type}
           </span>
         </td>
-        <td style={cellStyle}>{entry.category}</td>
-        <td style={{ ...cellStyle, color: 'var(--text-primary)' }}>{entry.action}</td>
-        <td style={cellStyle}>{truncate(entry.actor) ?? '—'}</td>
-        <td style={{ ...cellStyle, color: OUTCOME_COLORS[entry.outcome] ?? 'var(--text-muted)' }}>
-          {entry.outcome}
+        <td style={cellStyle}>
+          <span
+            style={{
+              padding: '2px 8px',
+              borderRadius: '999px',
+              fontSize: '10px',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              color: SEVERITY_COLORS[event.severity] || 'var(--text-secondary)',
+              border: `1px solid ${SEVERITY_COLORS[event.severity] || 'var(--border)'}`,
+            }}
+          >
+            {event.severity}
+          </span>
         </td>
+        <td style={{ ...cellStyle, color: 'var(--text-primary)' }}>{event.message}</td>
+        <td style={cellStyle}>{truncate(event.userId) ?? '—'}</td>
         <td style={{ ...cellStyle, color: 'var(--text-muted)' }}>{open ? '▾' : '▸'}</td>
       </tr>
       {open && (
         <tr style={{ background: 'var(--bg-elevated)' }}>
-          <td colSpan={7} style={{ padding: '12px 16px' }}>
+          <td colSpan={6} style={{ padding: '12px 16px' }}>
             <pre
               style={{
                 margin: 0,
@@ -297,12 +298,11 @@ function AuditRow({ entry }) {
             >
               {JSON.stringify(
                 {
-                  id: entry.id,
-                  target: entry.target,
-                  metadata: entry.metadata,
-                  sessionId: entry.sessionId,
-                  hash: entry.hash,
-                  prevHash: entry.prevHash,
+                  id: event.id,
+                  sessionId: event.sessionId,
+                  metadata: event.metadata,
+                  userAgent: event.userAgent,
+                  location: event.location,
                 },
                 null,
                 2,
@@ -315,7 +315,7 @@ function AuditRow({ entry }) {
   );
 }
 
-function StatCard({ label, value, color }) {
+function StatCard({ label, value, color, icon }) {
   return (
     <div
       style={{
@@ -325,10 +325,13 @@ function StatCard({ label, value, color }) {
         padding: '16px',
       }}
     >
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        {label}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        {icon && <div style={{ color }}>{icon}</div>}
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          {label}
+        </div>
       </div>
-      <div style={{ fontSize: '24px', fontWeight: 700, color, marginTop: '4px' }}>{value}</div>
+      <div style={{ fontSize: '24px', fontWeight: 700, color }}>{value}</div>
     </div>
   );
 }

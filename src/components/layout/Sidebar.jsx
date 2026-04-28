@@ -10,6 +10,8 @@ const NAV_ITEMS = [
   { id: 'transactions', label: 'Transactions', icon: '⇄' },
   { id: 'contracts', label: 'Contracts', icon: '◻' },
   { id: 'assets', label: 'Assets', icon: '💎' },
+  { id: 'anchors', label: 'Anchors', icon: '⚓' },
+  { id: 'search', label: 'Search', icon: '🔍' },
   { id: 'network', label: 'Network', icon: '◎' },
   { id: 'realtime', label: 'Real-Time', icon: '◉' },
   { id: 'builder', label: 'Builder', icon: '⚒' },

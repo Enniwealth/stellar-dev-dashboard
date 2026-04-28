@@ -33,6 +33,8 @@ import Settings from "./components/dashboard/Settings";
 import { AssetDiscovery } from "./components/assets";
 import { MultisigManager } from "./components/multisig";
 import AuditLog from "./components/dashboard/AuditLog";
+import { AnchorIntegration } from "./components/anchors";
+import AdvancedSearch from "./components/dashboard/AdvancedSearch";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useStore } from "./lib/store";
 import { useTranslation } from "./hooks/useTranslation";
@@ -91,6 +93,8 @@ const TABS = {
   systemHealth: SystemHealth,
   settings: Settings,
   audit: AuditLog,
+  anchors: AnchorIntegration,
+  search: AdvancedSearch,
 };
 
 function DashboardLayout() {
