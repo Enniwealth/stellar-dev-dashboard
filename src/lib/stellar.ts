@@ -828,6 +828,14 @@ export async function buildTransaction(
           startingBalance: op.startingBalance,
         })
       )
+    } else if (op.type === 'invokeHostFunction') {
+      // Simplified support for invocation for simulation purposes
+      txBuilder.addOperation(
+        StellarSdk.Operation.invokeHostFunction({
+          func: (op as any).func,
+          auth: (op as any).auth || [],
+        })
+      )
     }
   })
 
@@ -846,6 +854,14 @@ export interface SimulateResult {
   success: boolean
   errors: string[]
   xdr?: string
+  sorobanMetrics?: {
+    footprint: {
+      readOnly: SerializedLedgerKey[]
+      readWrite: SerializedLedgerKey[]
+    }
+    resourceFee: string
+    events?: SerializedContractEvent[]
+  }
 }
 
 export async function simulateTransaction(
@@ -878,6 +894,36 @@ export async function simulateTransaction(
     })
 
     const estimatedFee = params.baseFee * params.operations.length
+    
+    // Check if we should perform Soroban simulation
+    const hasSorobanOps = params.operations.some(op => op.type as string === 'invokeHostFunction')
+    let sorobanMetrics = undefined
+
+    if (hasSorobanOps || params.network !== 'mainnet') {
+      try {
+        const sorobanServer = getSorobanServer(params.network)
+        const simulation = await sorobanServer.simulateTransaction(transaction)
+        
+        if ('error' in simulation) {
+          errors.push(`Soroban simulation error: ${simulation.error}`)
+        } else {
+          const successfulSimulation = simulation as any
+          if (successfulSimulation.transactionData) {
+             sorobanMetrics = {
+               footprint: {
+                 readOnly: successfulSimulation.transactionData.getReadOnly().map(serializeLedgerKey),
+                 readWrite: successfulSimulation.transactionData.getReadWrite().map(serializeLedgerKey),
+               },
+               resourceFee: successfulSimulation.minResourceFee,
+               events: (successfulSimulation.events || []).map(serializeDiagnosticEvent)
+             }
+          }
+        }
+      } catch (e) {
+        // Fallback or ignore if Soroban simulation fails but we want basic results
+        console.warn('Soroban simulation failed:', e)
+      }
+    }
 
     return {
       fee: estimatedFee,
@@ -885,6 +931,7 @@ export async function simulateTransaction(
       success: errors.length === 0,
       errors,
       xdr: transaction.toXDR(),
+      sorobanMetrics
     }
   } catch (error) {
     return {
@@ -989,6 +1036,13 @@ export function buildExecutionTrace(
         ? 'Simulation succeeded with no blocking errors.'
         : simulation.errors.join('; '),
     },
+    {
+      step: 'Soroban Resource Preview',
+      status: simulation.sorobanMetrics ? 'ok' : 'warning',
+      detail: simulation.sorobanMetrics 
+        ? `Footprint: ${simulation.sorobanMetrics.footprint.readOnly.length} RO, ${simulation.sorobanMetrics.footprint.readWrite.length} RW keys. Min fee: ${simulation.sorobanMetrics.resourceFee} stroops.`
+        : 'Soroban metrics not available for this transaction.',
+    }
   ]
 
   return steps

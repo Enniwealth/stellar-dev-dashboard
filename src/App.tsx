@@ -25,6 +25,8 @@ import AdvancedChartSuite from './components/charts/AdvancedChartSuite'
 import TransactionBuilder from './components/dashboard/TransactionBuilder'
 import ContractInteraction from './components/dashboard/ContractInteraction'
 import ContractABI from './components/dashboard/ContractABI'
+import AdvancedTransactionSimulation from './components/dashboard/AdvancedTransactionSimulation'
+import TransactionSimulator from './components/dashboard/TransactionSimulator'
 import DEXExplorer from './components/dashboard/DEXExplorer'
 import ExplorerEmbed from './components/dashboard/ExplorerEmbed'
 import RealTimeLedger from './components/dashboard/RealTimeLedger'
@@ -117,6 +119,8 @@ const TABS: Record<string, TabComponent> = {
   search: AdvancedSearch,
   cacheStats: CacheStats,
   liveActivity: LiveActivityFeed,
+  txSimulator: TransactionSimulator,
+  advancedSim: AdvancedTransactionSimulation,
 }
 
 function NotificationBell({ onClick }: { onClick: () => void }) {
