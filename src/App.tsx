@@ -6,6 +6,7 @@ import './styles/responsive.css'
 
 import Sidebar from './components/layout/Sidebar'
 import MobileHeader from './components/layout/MobileHeader'
+import MobileSidebar from './components/layout/MobileSidebar'
 import ConnectPanel from './components/dashboard/ConnectPanel'
 import Overview from './components/dashboard/Overview'
 import Account from './components/dashboard/Account'
@@ -315,7 +316,7 @@ function DashboardLayout() {
         }}
       >
         {isMobile && <MobileHeader />}
-        <Sidebar isMobile={isMobile} />
+        {isMobile ? <MobileSidebar /> : <Sidebar />}
         <main style={getMainStyles()}>
           <KeyboardNavigation />
           <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
