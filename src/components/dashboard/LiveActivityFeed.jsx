@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Card from './Card'
 import { useStore } from '../../lib/store'
 import { useAccountStream } from '../../hooks/useAccountStream'
@@ -18,6 +18,9 @@ const STATUS_COLORS = {
   error: 'var(--error, #ef4444)',
   disconnected: 'var(--text-muted)',
 }
+
+// Milliseconds before marking stream as stale (no messages received)
+const STALE_STREAM_THRESHOLD_MS = 10_000
 
 function formatTime(ts) {
   return new Date(ts).toLocaleTimeString()
@@ -50,13 +53,20 @@ function truncate(s) {
 }
 
 /**
- * Real-time, account-scoped activity feed. Shows a paged list of incoming
- * events for the connected account, with selectable channels and a live
- * connection indicator.
+ * Real-time, account-scoped activity feed. Shows a unified timeline of incoming
+ * events (effects, payments, operations, transactions) for the connected account.
+ *
+ * Features:
+ * - Multi-channel event subscription (effects, payments, operations, transactions)
+ * - Automatic unsubscription on account/network change or component unmount
+ * - Stale-stream warning when no messages received for threshold duration
+ * - Sorted unified feed across all channels
+ * - Status indicator with reconnection support
  */
 export default function LiveActivityFeed() {
   const { connectedAddress, network } = useStore()
   const [selectedChannels, setSelectedChannels] = useState(['effects', 'payments'])
+  const [isStale, setIsStale] = useState(false)
 
   const { events, status, lastEventAt, errored } = useAccountStream(
     connectedAddress,
@@ -67,6 +77,30 @@ export default function LiveActivityFeed() {
       emitNotifications: true,
     },
   )
+
+  // Track stream staleness: after status becomes 'connected', check if we receive
+  // messages within the threshold. If not, mark as stale.
+  useEffect(() => {
+    if (status !== 'connected' || !lastEventAt) {
+      setIsStale(false)
+      return
+    }
+
+    // Set timer to check for staleness
+    const checkStale = setTimeout(() => {
+      const timeSinceLastEvent = Date.now() - lastEventAt
+      if (timeSinceLastEvent > STALE_STREAM_THRESHOLD_MS) {
+        setIsStale(true)
+      }
+    }, STALE_STREAM_THRESHOLD_MS)
+
+    return () => clearTimeout(checkStale)
+  }, [status, lastEventAt])
+
+  // Clear events and reset state when account/network changes
+  useEffect(() => {
+    setIsStale(false)
+  }, [connectedAddress, network])
 
   const toggleChannel = (id) => {
     setSelectedChannels((prev) => {
@@ -106,10 +140,11 @@ export default function LiveActivityFeed() {
                 height: '6px',
                 borderRadius: '50%',
                 background: STATUS_COLORS[status],
-                animation: status === 'connected' ? 'pulse 1.6s infinite' : 'none',
+                animation: status === 'connected' && !isStale ? 'pulse 1.6s infinite' : 'none',
               }}
             />
             {status}
+            {isStale && status === 'connected' && ' (stale)'}
           </span>
           {lastEventAt && (
             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -162,6 +197,21 @@ export default function LiveActivityFeed() {
           }}
         >
           Stream stopped after multiple failures. Switch network or reconnect to retry.
+        </div>
+      )}
+
+      {isStale && status === 'connected' && (
+        <div
+          style={{
+            padding: '10px 14px',
+            background: 'rgba(245, 158, 11, 0.08)',
+            color: 'var(--warning, #f59e0b)',
+            fontSize: '12px',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          ⚠️ Stream connected but no updates for {(STALE_STREAM_THRESHOLD_MS / 1000).toFixed(0)}s.
+          Check your account activity or network connection.
         </div>
       )}
 

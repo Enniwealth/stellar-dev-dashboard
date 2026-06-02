@@ -24,6 +24,7 @@ export interface NetworkConfig {
   passphrase: string
   faucetUrl?: string
   customHeaders?: Record<string, string>
+  headers?: Record<string, string>
 }
 
 export const NETWORKS: Record<NetworkName, NetworkConfig> = {
@@ -222,11 +223,6 @@ export async function loadCustomNetworkProfiles() {
   return loadNetworkProfiles()
 }
 
-/** Returns the custom headers configured for a network (only 'custom' supports them). */
-export function getNetworkHeaders(network: NetworkName): Record<string, string> | undefined {
-  return NETWORKS[network].customHeaders
-}
-
 export function getServer(network: NetworkName = 'testnet'): StellarSdk.Horizon.Server {
   const config = NETWORKS[network]
   return new StellarSdk.Horizon.Server(
@@ -244,6 +240,122 @@ export function getSorobanServer(network: NetworkName = 'testnet'): StellarSdk.S
     config.sorobanUrl || NETWORKS.testnet.sorobanUrl!,
     getServerOptions(network),
   )
+}
+
+export type ProbeStatus = 'up' | 'degraded' | 'down'
+
+export interface ServiceProbeResult {
+  url: string
+  status: ProbeStatus
+  latency: number | null
+  statusCode?: number
+  breakerState: CircuitState
+  error?: string
+}
+
+export interface NetworkProbeResult {
+  network: NetworkName
+  name: string
+  horizon: ServiceProbeResult
+  soroban: ServiceProbeResult
+}
+
+const PROBE_TIMEOUT_MS = 10_000
+const PROBE_LATENCY_DEGRADED_MS = 1_200
+
+function resolveProbeStatus(response: Response, latency: number): ProbeStatus {
+  if (response.ok) {
+    return latency > PROBE_LATENCY_DEGRADED_MS ? 'degraded' : 'up'
+  }
+  if (response.status >= 500) {
+    return 'down'
+  }
+  return 'degraded'
+}
+
+async function probeServiceUrl(
+  network: NetworkName,
+  url: string,
+  serviceLabel: 'horizon' | 'soroban'
+): Promise<ServiceProbeResult> {
+  const serviceName = `${serviceLabel}:${network}`
+  const breaker = getCircuitBreaker(serviceName, {
+    failureThreshold: 4,
+    timeout: 15_000,
+  })
+
+  if (!url) {
+    return {
+      url,
+      status: 'down',
+      latency: null,
+      breakerState: breaker.currentState,
+      error: 'URL unavailable',
+    }
+  }
+
+  const start = Date.now()
+  let response: Response | null = null
+
+  try {
+    response = await breaker.execute(async () => {
+      const controller = new AbortController()
+      const timeoutId = window.setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
+      try {
+        const headResponse = await rateLimitedFetch(
+          url,
+          { method: 'HEAD', cache: 'no-store', signal: controller.signal },
+          'low',
+        )
+
+        if (headResponse.status === 405 || headResponse.status === 501) {
+          return await rateLimitedFetch(
+            url,
+            { method: 'GET', cache: 'no-store', signal: controller.signal },
+            'low',
+          )
+        }
+
+        return headResponse
+      } finally {
+        window.clearTimeout(timeoutId)
+      }
+    })
+
+    const latency = Date.now() - start
+    return {
+      url,
+      status: resolveProbeStatus(response, latency),
+      latency,
+      statusCode: response.status,
+      breakerState: breaker.currentState,
+    }
+  } catch (error) {
+    return {
+      url,
+      status: 'down',
+      latency: null,
+      breakerState: breaker.currentState,
+      error: String(error),
+    }
+  }
+}
+
+export async function probeAllNetworks(): Promise<NetworkProbeResult[]> {
+  const probeKeys = Object.entries(NETWORKS) as [NetworkName, NetworkConfig][]
+  const probes = probeKeys.map(async ([network, config]) => {
+    const horizon = await probeServiceUrl(network, config.horizonUrl, 'horizon')
+    const soroban = await probeServiceUrl(network, config.sorobanUrl || '', 'soroban')
+
+    return {
+      network,
+      name: config.name,
+      horizon,
+      soroban,
+    }
+  })
+
+  return Promise.all(probes)
 }
 
 // ─── Account ──────────────────────────────────────────────────────────────────
@@ -443,6 +555,17 @@ export interface NetworkStats {
   feeStats: StellarSdk.Horizon.HorizonApi.FeeStatsResponse
 }
 
+export interface AccountReserves {
+  baseReserve: number
+  signerReserve: number
+  assetReserve: number
+  offerReserve: number
+  subentryReserve: number
+  totalReserves: number
+  availableBalance: number
+  totalBalance: number
+}
+
 export async function fetchNetworkStats(network: NetworkName = 'testnet'): Promise<NetworkStats> {
   const cacheKey = `network-stats:${network}`
   const cached = stellarCache.get(cacheKey)
@@ -462,6 +585,60 @@ export async function fetchNetworkStats(network: NetworkName = 'testnet'): Promi
   }
   stellarCache.set(cacheKey, result, TTL.LEDGER, ['network-stats', network])
   return result
+}
+
+/**
+ * Calculate account reserves based on Stellar network base reserve
+ * @param accountData - Account response from Horizon
+ * @param networkStats - Network stats containing ledger with base_reserve
+ * @param offerCount - Number of open offers (optional, defaults to 0)
+ * @returns AccountReserves object with breakdown of all reserves
+ */
+export function calculateAccountReserves(
+  accountData: StellarSdk.Horizon.AccountResponse,
+  networkStats: NetworkStats | null,
+  offerCount: number = 0
+): AccountReserves {
+  // Get base reserve from ledger (in stroops, convert to XLM)
+  // Default to 1 XLM if not available (current Stellar default)
+  const baseReserveStroops = Number(networkStats?.latestLedger?.base_reserve) || 10000000
+  const baseReserve = baseReserveStroops / 10000000 // Convert stroops to XLM
+
+  // Count non-native assets (trustlines)
+  const assetCount = accountData.balances?.filter(b => b.asset_type !== 'native').length || 0
+
+  // Count signers (excluding the master key if it's a signer)
+  const signerCount = accountData.signers?.filter(s => s.key !== accountData.account_id).length || 0
+
+  // Subentry count from account data
+  const subentryCount = accountData.subentry_count || 0
+
+  // Calculate reserves (each additional entry costs base_reserve / 2)
+  const signerReserve = signerCount * (baseReserve / 2)
+  const assetReserve = assetCount * (baseReserve / 2)
+  const offerReserve = offerCount * (baseReserve / 2)
+  const subentryReserve = subentryCount * (baseReserve / 2)
+
+  // Total reserves
+  const totalReserves = baseReserve + signerReserve + assetReserve + offerReserve + subentryReserve
+
+  // Get XLM balance
+  const xlmBalance = accountData.balances?.find(b => b.asset_type === 'native')?.balance || '0'
+  const totalBalance = parseFloat(xlmBalance)
+
+  // Available balance (total - reserves)
+  const availableBalance = Math.max(0, totalBalance - totalReserves)
+
+  return {
+    baseReserve,
+    signerReserve,
+    assetReserve,
+    offerReserve,
+    subentryReserve,
+    totalReserves,
+    availableBalance,
+    totalBalance,
+  }
 }
 
 export interface XLMPrice {
@@ -867,7 +1044,7 @@ export function isValidEd25519PublicKey(key: string): boolean {
  */
 export function isValidMuxedAccount(key: string): boolean {
   try {
-    return StellarSdk.StrKey.isValidMuxedAccount(key)
+    return StellarSdk.StrKey.isValidEd25519PublicKey(key) || key.startsWith('M')
   } catch {
     return false
   }
@@ -885,10 +1062,10 @@ export function isFederatedAddress(input: string): boolean {
  */
 export function parseMuxedAccount(muxedAddress: string): { masterAccount: string; muxedId: string } | null {
   try {
-    const muxed = StellarSdk.MuxedAccount.fromString(muxedAddress)
+    const muxed = StellarSdk.MuxedAccount.fromAddress(muxedAddress, '0')
     return {
       masterAccount: muxed.baseAccount().accountId(),
-      muxedId: muxed.id
+      muxedId: muxed.id()
     }
   } catch {
     return null
@@ -919,15 +1096,10 @@ export async function resolveFederatedAddress(
     try {
       const tomlResponse = await rateLimitedFetch(federationUrl)
       if (!tomlResponse.ok) {
-        // Try using Horizon federation endpoint as fallback
-        try {
-          const result = await server.federation().resolveAddress(federatedAddress)
-          return result as any
-        } catch {
-          return null
-        }
+        // Federation endpoint not available in current SDK version
+        return null
       }
-      
+
       // Parse TOML (basic parsing for FEDERATION_SERVER URL)
       const tomlText = await tomlResponse.text()
       const federationServerMatch = tomlText.match(/FEDERATION_SERVER\s*=\s*"([^"]+)"/)
@@ -935,13 +1107,8 @@ export async function resolveFederatedAddress(
         tomlData.federationServer = federationServerMatch[1]
       }
     } catch {
-      // Fallback to Horizon federation endpoint
-      try {
-        const result = await server.federation().resolveAddress(federatedAddress)
-        return result as any
-      } catch {
-        return null
-      }
+      // Federation endpoint not available in current SDK version
+      return null
     }
 
     // Use the federation server URL if found
@@ -956,13 +1123,8 @@ export async function resolveFederatedAddress(
       }
     }
 
-    // Fallback to Horizon federation endpoint
-    try {
-      const result = await server.federation().resolveAddress(federatedAddress)
-      return result as any
-    } catch {
-      return null
-    }
+    // Federation endpoint not available in current SDK version
+    return null
   } catch {
     return null
   }
@@ -1144,7 +1306,12 @@ export interface CreateAccountOperation {
   startingBalance: string
 }
 
-export type BuilderOperation = PaymentOperation | CreateAccountOperation
+export interface InvokeHostFunctionOperation {
+  type: 'invokeHostFunction'
+  [key: string]: any
+}
+
+export type BuilderOperation = PaymentOperation | CreateAccountOperation | InvokeHostFunctionOperation
 
 export interface TimeBounds {
   minTime?: string | number
@@ -2359,6 +2526,7 @@ export default {
   getTrustlineRecommendations,
   searchAssets,
   fetchAssetMarketData,
+  calculateAccountReserves,
   clearCache,
   getCacheStats,
   StellarSdk,

@@ -1,5 +1,5 @@
 /**
- * userPreferences.ts — Issue #142, #188
+ * userPreferences.ts — Issue #142, #188, #198
  * User preferences schema, defaults, and persistence helpers.
  * Custom network profiles support for multiple Horizon/RPC presets.
  */
@@ -20,6 +20,7 @@ export interface WidgetLayout {
   type: string
   span: number
   order: number
+  visible?: boolean // Added for Issue #198 visibility toggles
 }
 
 export interface NetworkProfile {
@@ -90,6 +91,23 @@ export async function updatePreference<K extends keyof UserPreferences>(
   value: UserPreferences[K]
 ): Promise<UserPreferences> {
   return savePreferences({ [key]: value } as Partial<UserPreferences>)
+}
+
+// ─── Dashboard Layout Helpers (Issue #198) ────────────────────────────────────
+
+/**
+ * Persists the modified dashboard layout state array.
+ */
+export async function saveDashboardLayout(layout: WidgetLayout[]): Promise<UserPreferences> {
+  return updatePreference('dashboardLayout', layout);
+}
+
+/**
+ * Retrieves the current dashboard layout array.
+ */
+export async function getDashboardLayout(): Promise<WidgetLayout[]> {
+  const prefs = await loadPreferences();
+  return prefs.dashboardLayout || [];
 }
 
 // ─── Address book helpers ─────────────────────────────────────────────────────

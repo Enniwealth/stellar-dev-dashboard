@@ -37,9 +37,9 @@ export function buildCspHeader(nonce) {
   return [
     `default-src 'self'`,
     `script-src 'self'${nonceAttr}`,
-    `style-src 'self' 'unsafe-inline'`,   // Tailwind requires inline styles
+    `style-src 'self'${nonceAttr}`,
     `img-src 'self' data: https:`,
-    `connect-src 'self' https://*.stellar.org https://horizon.stellar.org https://horizon-testnet.stellar.org wss:`,
+    `connect-src 'self' https://*.stellar.org https://api.coingecko.com`,
     `font-src 'self'`,
     `object-src 'none'`,
     `base-uri 'self'`,
@@ -58,6 +58,40 @@ const DANGEROUS_HTML_CHARS = {
   '"': '&quot;',
   "'": '&#x27;',
   '/': '&#x2F;',
+}
+
+const SECRET_KEY_PATTERN = /\bS[A-Z2-7]{55}\b/g
+const SENSITIVE_FIELD_REGEX = /(secret|secretkey|privatekey|seed|mnemonic|password|passphrase|token|apikey|authorization)/i
+const AUTH_TOKEN_PATTERN = /\b(Bearer|Token)\s+[A-Za-z0-9\-._~+/]+=*\b/gi
+
+export function redactSensitive(value, key) {
+  if (value == null) return value
+
+  if (typeof value === 'string') {
+    let redacted = value.replace(SECRET_KEY_PATTERN, '[REDACTED_SECRET_KEY]')
+    redacted = redacted.replace(AUTH_TOKEN_PATTERN, '$1 [REDACTED]')
+    if (key && SENSITIVE_FIELD_REGEX.test(key)) {
+      return '[REDACTED]'
+    }
+    return redacted
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSensitive(item))
+  }
+
+  if (typeof value === 'object') {
+    return Object.entries(value).reduce((acc, [childKey, childValue]) => {
+      if (SENSITIVE_FIELD_REGEX.test(childKey)) {
+        acc[childKey] = '[REDACTED]'
+      } else {
+        acc[childKey] = redactSensitive(childValue, childKey)
+      }
+      return acc
+    }, {})
+  }
+
+  return value
 }
 
 /**

@@ -1,3 +1,5 @@
+import { probeAllNetworks } from "../lib/stellar";
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -30,6 +32,48 @@ export function collectHealthSnapshot() {
     memory: readMemory(),
     navigation: readNavigationTiming(),
   };
+}
+
+const MAX_LATENCY_POINTS = 96
+const latencyHistory = []
+
+function recordLatencySample(latency) {
+  if (!Number.isFinite(latency) || latency === null) return
+  latencyHistory.push({ timestamp: nowIso(), latency })
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000
+  while (latencyHistory.length && Date.parse(latencyHistory[0].timestamp) < cutoff) {
+    latencyHistory.shift()
+  }
+  while (latencyHistory.length > MAX_LATENCY_POINTS) {
+    latencyHistory.shift()
+  }
+}
+
+export async function collectSystemHealthSnapshot() {
+  const snapshot = collectHealthSnapshot()
+  let networkHealth = []
+
+  try {
+    networkHealth = await probeAllNetworks()
+
+    const horizonLatencies = networkHealth
+      .map((network) => network.horizon.latency)
+      .filter((latency) => Number.isFinite(latency))
+
+    if (horizonLatencies.length) {
+      const avgLatency =
+        horizonLatencies.reduce((sum, value) => sum + value, 0) / horizonLatencies.length
+      recordLatencySample(avgLatency)
+    }
+  } catch (error) {
+    console.warn('Network probe failed:', error)
+  }
+
+  return {
+    ...snapshot,
+    networkHealth,
+    latencyHistory: [...latencyHistory],
+  }
 }
 
 export function computeHealthScore(snapshot) {

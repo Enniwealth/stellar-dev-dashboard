@@ -3,6 +3,8 @@
  * Logs all user actions, API calls, and data changes with security monitoring
  */
 
+import { redactSensitive } from '../utils/security.js'
+
 class AuditTrail {
   constructor() {
     this.events = [];
@@ -193,55 +195,11 @@ class AuditTrail {
   }
 
   sanitizeParams(params) {
-    // Remove sensitive data like private keys, passwords, API keys, etc.
-    const sanitized = { ...params };
-    const sensitiveKeys = ['secret', 'privateKey', 'password', 'token'];
-    
-    sensitiveKeys.forEach(key => {
-      if (sanitized[key]) {
-        sanitized[key] = '[REDACTED]';
-      }
-    });
-
-    // Redact sensitive HTTP headers (Authorization, x-api-key, etc.)
-    if (sanitized.headers && typeof sanitized.headers === 'object') {
-      const redactedHeaders = { ...sanitized.headers };
-      Object.keys(redactedHeaders).forEach(h => {
-        if (/^(authorization|x-api-key|api-key)$/i.test(h)) {
-          redactedHeaders[h] = '[REDACTED]';
-        }
-      });
-      sanitized.headers = redactedHeaders;
-    }
-    
-    return sanitized;
+    return redactSensitive(params)
   }
 
   sanitizeData(data) {
-    if (!data) return data;
-    
-    // Create a deep copy and redact sensitive fields
-    const sanitized = JSON.parse(JSON.stringify(data));
-    const sensitivePaths = [
-      'secretKey', 'privateKey', 'seed', 'password', 'token',
-      'signerKey', 'signingKey', 'secret', 'authorization',
-      'apiKey', 'api-key', 'x-api-key', 'headers'
-    ];
-    
-    const redactSensitive = (obj) => {
-      if (typeof obj !== 'object' || obj === null) return obj;
-      
-      for (const key in obj) {
-        if (sensitivePaths.some(path => key.toLowerCase().includes(path.toLowerCase()))) {
-          obj[key] = '[REDACTED]';
-        } else if (typeof obj[key] === 'object') {
-          redactSensitive(obj[key]);
-        }
-      }
-      return obj;
-    };
-    
-    return redactSensitive(sanitized);
+    return redactSensitive(data)
   }
 
   // Query methods
@@ -267,6 +225,7 @@ class AuditTrail {
     
     if (options.endDate) {
       const end = new Date(options.endDate);
+      end.setUTCHours(23, 59, 59, 999);
       filtered = filtered.filter(event => new Date(event.timestamp) <= end);
     }
     
@@ -322,7 +281,14 @@ class AuditTrail {
   }
 
   exportAsCSV(events) {
-    const headers = ['ID', 'Timestamp', 'User ID', 'Type', 'Message', 'Severity', 'Metadata'];
+    const escapeCsv = (value) => {
+      const text = value == null ? '' : String(value)
+      const needsQuotes = /[",\n]/.test(text)
+      const safe = text.replace(/"/g, '""')
+      return needsQuotes ? `"${safe}"` : safe
+    }
+
+    const headers = ['ID', 'Timestamp', 'User ID', 'Type', 'Message', 'Severity', 'Metadata']
     const rows = events.map(event => [
       event.id,
       event.timestamp,
@@ -331,9 +297,11 @@ class AuditTrail {
       event.message,
       event.severity,
       JSON.stringify(event.metadata)
-    ]);
-    
-    return [headers, ...rows].map(row => row.join(',')).join('\n');
+    ])
+
+    return [headers, ...rows]
+      .map(row => row.map(escapeCsv).join(','))
+      .join('\n')
   }
 
   exportAsText(events) {

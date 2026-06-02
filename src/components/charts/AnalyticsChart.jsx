@@ -53,6 +53,31 @@ export function ActivityTrendChart({ data = [] }) {
   );
 }
 
+export function LatencyTrendChart({ data = [] }) {
+  return (
+    <ChartShell title="Latency (Last 24h)">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+          <XAxis
+            dataKey="timestamp"
+            tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+            tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            minTickGap={40}
+          />
+          <YAxis
+            tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+            domain={[0, 'dataMax + 100']}
+            unit="ms"
+          />
+          <Tooltip formatter={(value) => [`${value} ms`, 'Latency']} />
+          <Line dataKey="latency" stroke="var(--cyan)" strokeWidth={2} dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    </ChartShell>
+  );
+}
+
 export function FeeTrendChart({ data = [] }) {
   return (
     <ChartShell title="Fees (Stroops)">
@@ -69,10 +94,11 @@ export function FeeTrendChart({ data = [] }) {
   );
 }
 
-export default function AnalyticsChart({ data = [] }) {
+export default function AnalyticsChart({ data = [], latencyData = [] }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
       <ActivityTrendChart data={data} />
+      {latencyData.length > 0 && <LatencyTrendChart data={latencyData} />}
       <FeeTrendChart data={data} />
     </div>
   );

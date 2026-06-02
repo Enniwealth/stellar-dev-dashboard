@@ -2,6 +2,7 @@ import React from "react";
 import { useStore } from '../../lib/store'
 import { useMonitoring } from "../../hooks/useMonitoring";
 import { StatCard } from "./Card";
+import { LatencyTrendChart } from "../charts/AnalyticsChart";
 
 function AlertRow({ alert, onClear }) {
   const color =
@@ -46,10 +47,60 @@ function AlertRow({ alert, onClear }) {
   );
 }
 
+function ServiceStatus({ label, probe }) {
+  const color =
+    probe.status === "up"
+      ? "var(--green)"
+      : probe.status === "degraded"
+        ? "var(--amber)"
+        : "var(--red)";
+
+  return (
+    <div
+      style={{
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+        background: "var(--bg-elevated)",
+        padding: "12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+      }}
+    >
+      <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        {label}
+      </div>
+      <div style={{ fontSize: "16px", color, fontWeight: 700, textTransform: "uppercase" }}>
+        {probe.status}
+      </div>
+      <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+        {probe.latency != null ? `${probe.latency} ms` : probe.error || "unavailable"}
+      </div>
+      <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+        Circuit breaker: {probe.breakerState}
+      </div>
+    </div>
+  );
+}
+
 export default function SystemHealth() {
   const { setActiveTab } = useStore()
   const { snapshot, score, alerts, errors, clearAlert, resetAlerts } = useMonitoring();
   const memory = snapshot?.memory;
+  const networkHealth = snapshot?.networkHealth || [];
+  const latencyHistory = snapshot?.latencyHistory || [];
+
+  const averageLatency = latencyHistory.length
+    ? Math.round(latencyHistory[latencyHistory.length - 1].latency)
+    : null;
+
+  const openBreakers = networkHealth.reduce((count, network) => {
+    return (
+      count +
+      (network.horizon.breakerState === "OPEN" ? 1 : 0) +
+      (network.soroban.breakerState === "OPEN" ? 1 : 0)
+    );
+  }, 0);
 
   return (
     <div className="animate-in" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -64,7 +115,7 @@ export default function SystemHealth() {
         <StatCard label="Runtime Errors" value={errors.length} accent={errors.length ? "var(--amber)" : "var(--cyan)"} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "12px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "12px" }}>
         <StatCard
           label="Heap Used (MB)"
           value={memory?.usedJSHeapSize ? (memory.usedJSHeapSize / (1024 * 1024)).toFixed(2) : "n/a"}
@@ -77,6 +128,68 @@ export default function SystemHealth() {
           label="Load Event (ms)"
           value={snapshot?.navigation?.loadEventMs || "n/a"}
         />
+        <StatCard
+          label="Avg Latency"
+          value={averageLatency != null ? `${averageLatency} ms` : "n/a"}
+          accent={averageLatency != null && averageLatency > 1200 ? "var(--amber)" : "var(--green)"}
+        />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "12px" }}>
+        <StatCard label="Networks Probed" value={networkHealth.length} />
+        <StatCard label="Open Breakers" value={openBreakers} accent={openBreakers ? "var(--red)" : "var(--cyan)"} />
+        <StatCard label="Probes Last Updated" value={snapshot?.timestamp || "n/a"} />
+        <StatCard
+          label="Latency History"
+          value={latencyHistory.length ? `${latencyHistory.length} points` : "pending"}
+        />
+      </div>
+
+      {networkHealth.length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gap: "12px",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-display)", fontSize: "13px" }}>Network Probes</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "12px" }}>
+            {networkHealth.map((network) => (
+              <div
+                key={network.network}
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-lg)",
+                  background: "var(--bg-card)",
+                  padding: "14px",
+                }}
+              >
+                <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "10px" }}>
+                  {network.name}
+                </div>
+                <div style={{ display: "grid", gap: "10px" }}>
+                  <ServiceStatus label="Horizon" probe={network.horizon} />
+                  <ServiceStatus label="Soroban" probe={network.soroban} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+          padding: "14px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+        }}
+      >
+        <div style={{ fontFamily: "var(--font-display)", fontSize: "13px" }}>Latency Trend</div>
+        <LatencyTrendChart data={latencyHistory} />
       </div>
 
       <div

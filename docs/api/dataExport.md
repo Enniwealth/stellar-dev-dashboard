@@ -12,6 +12,18 @@ Serialise `data` to JSON and trigger a browser download as `filename.json`.
 
 Convert an array of objects to CSV and download as `filename.csv`. Column order follows the `columns` array, or `Object.keys(rows[0])` if omitted. Values containing commas, quotes, or newlines are properly escaped.
 
+### Audit Trail export
+
+The Audit Trail page now supports exporting filtered audit events in the dashboard. Enterprise users can filter by:
+
+- search text
+- event type
+- severity
+- explicit start/end dates
+- preset ranges such as last 7, 30, or 90 days
+
+JSON and CSV exports are backed by `src/utils/export.js`, and a lightweight PDF export is available without introducing heavy external dependencies.
+
 ### `exportDashboardBackup(state, filename?)`
 
 Build and download a complete dashboard backup including theme, network, and watched addresses.

@@ -63,3 +63,31 @@ Returns: `Promise<string>` (base64)
 - AES-256-GCM provides both confidentiality and integrity (authenticated encryption)
 - Never store the passphrase alongside the ciphertext
 - For production use, consider hardware wallet signing instead of local key storage
+
+---
+
+## Encrypted Template Export Format (Issue #178)
+
+Transaction template export/import uses `encrypt()` / `decrypt()` and produces a portable JSON file.
+
+**File shape (v1):**
+
+```json
+{
+  "format": "stellar-dev-dashboard.transaction-templates",
+  "version": 1,
+  "encrypted": { "ciphertext": "...", "iv": "...", "salt": "..." },
+  "exportedAt": "2026-05-29T12:34:56.000Z"
+}
+```
+
+Decrypted plaintext is a JSON pack:
+
+```json
+{ "version": 1, "templates": [/*...*/], "updatedAt": "..." }
+```
+
+**Storage-at-rest**
+
+Locally saved templates are stored encrypted in IndexedDB via `setEncryptedValue()` / `getEncryptedValue()` in `src/lib/storage.js`.
+No plaintext templates or passphrases are persisted.

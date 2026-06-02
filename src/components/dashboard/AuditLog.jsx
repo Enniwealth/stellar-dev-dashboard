@@ -11,6 +11,7 @@ import {
   Activity,
 } from 'lucide-react';
 import auditTrail from '../../lib/auditTrail.js';
+import { exportCsv, exportJson, exportPdf } from '../../utils/export.js';
 
 const SEVERITY_COLORS = {
   info:     'var(--cyan)',
@@ -36,6 +37,9 @@ export default function AuditLog() {
   const [type, setType] = useState('');
   const [severity, setSeverity] = useState('');
   const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [rangePreset, setRangePreset] = useState('');
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -45,9 +49,47 @@ export default function AuditLog() {
       type: type || undefined,
       severity: severity || undefined,
       search: search || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     }),
-    [type, severity, search],
+    [type, severity, search, startDate, endDate],
   );
+
+  const formatDateInput = (date) => new Date(date).toISOString().slice(0, 10);
+
+  const applyRangePreset = (days) => {
+    setRangePreset(days);
+    if (!days) {
+      setStartDate('');
+      setEndDate('');
+      return;
+    }
+
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(end.getDate() - Number(days) + 1);
+
+    setStartDate(formatDateInput(start));
+    setEndDate(formatDateInput(end));
+  };
+
+  const buildAuditText = (eventsToExport) => {
+    return eventsToExport.map((event) => {
+      return [`[${event.timestamp}] ${event.severity.toUpperCase()} ${event.type}: ${event.message}`, `User ID: ${event.userId || '—'}`, `Metadata: ${JSON.stringify(event.metadata, null, 2)}`, '---'].join('\n');
+    }).join('\n');
+  };
+
+  const buildCsvRows = (eventsToExport) => {
+    return eventsToExport.map((event) => ({
+      id: event.id,
+      timestamp: event.timestamp,
+      userId: event.userId || '',
+      type: event.type,
+      message: event.message,
+      severity: event.severity,
+      metadata: JSON.stringify(event.metadata),
+    }));
+  };
 
   useEffect(() => {
     // Load events and stats
@@ -60,23 +102,48 @@ export default function AuditLog() {
     setRefreshKey(prev => prev + 1);
   };
 
-  const downloadFile = (filename, mime, content) => {
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleExport = (format) => {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     try {
-      const content = auditTrail.exportEvents(format, filters);
-      const mime = format === 'json' ? 'application/json' : 
-                   format === 'csv' ? 'text/csv' : 'text/plain';
-      downloadFile(`audit-${stamp}.${format}`, mime, content);
+      const eventsToExport = auditTrail.getEvents(filters);
+      const filename = `audit-${stamp}`;
+
+      if (format === 'json') {
+        exportJson(
+          {
+            exportDate: new Date().toISOString(),
+            filters: {
+              ...filters,
+              startDate: filters.startDate || null,
+              endDate: filters.endDate || null,
+            },
+            totalEvents: eventsToExport.length,
+            events: eventsToExport,
+          },
+          filename,
+        );
+        return;
+      }
+
+      if (format === 'csv') {
+        exportCsv(buildCsvRows(eventsToExport), filename, [
+          'id',
+          'timestamp',
+          'userId',
+          'type',
+          'message',
+          'severity',
+          'metadata',
+        ]);
+        return;
+      }
+
+      if (format === 'pdf') {
+        exportPdf(buildAuditText(eventsToExport), filename);
+        return;
+      }
+
+      throw new Error(`Unsupported export format: ${format}`);
     } catch (error) {
       console.error('Export failed:', error);
       alert('Export failed: ' + error.message);
@@ -110,7 +177,7 @@ export default function AuditLog() {
           <ToolbarButton onClick={refresh} icon={<RefreshCw size={14} />} label="Refresh" />
           <ToolbarButton onClick={() => handleExport('json')} icon={<Download size={14} />} label="Export JSON" />
           <ToolbarButton onClick={() => handleExport('csv')} icon={<Download size={14} />} label="Export CSV" />
-          <ToolbarButton onClick={() => handleExport('txt')} icon={<Download size={14} />} label="Export TXT" />
+          <ToolbarButton onClick={() => handleExport('pdf')} icon={<Download size={14} />} label="Export PDF" />
           <ToolbarButton onClick={handleClear} icon={<Trash2 size={14} />} label="Clear" danger />
         </div>
       </div>
@@ -200,6 +267,45 @@ export default function AuditLog() {
           <option value="warning">Warning</option>
           <option value="error">Error</option>
         </select>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          <label style={{ display: 'grid', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            From date
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { setStartDate(e.target.value); setRangePreset(''); }}
+              style={inputStyle}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            To date
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setEndDate(e.target.value); setRangePreset(''); }}
+              style={inputStyle}
+            />
+          </label>
+          <div style={{ display: 'grid', gap: '8px' }}>
+            <select
+              value={rangePreset}
+              onChange={(e) => applyRangePreset(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="">All dates</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => applyRangePreset('')}
+              style={smallButtonStyle}
+            >
+              Clear date range
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Table */}

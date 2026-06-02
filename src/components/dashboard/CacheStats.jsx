@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Card from './Card'
+import { useRateLimiter } from '../../hooks/useRateLimiter'
 import {
   getCombinedCacheStats,
   pruneCaches,
@@ -66,6 +67,7 @@ export default function CacheStats() {
   const [snapshot, setSnapshot] = useState({ managers: [], storage: { appState: 0, apiCache: 0, offlineQueue: 0 } })
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const { stats: rateLimiterStats } = useRateLimiter()
 
   const refresh = async () => {
     try {
@@ -154,6 +156,25 @@ export default function CacheStats() {
           <Stat label="Overall hit rate" value={overallRate} accent />
         </div>
       </Card>
+
+      {rateLimiterStats && (
+        <Card
+          title="Rate limiter metrics"
+          subtitle={`Queue depth and throttling (Mode: ${rateLimiterStats.throttleMode})`}
+        >
+          <div style={{ padding: '14px 18px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+            <Stat label="Queue length" value={formatNumber(rateLimiterStats.totalQueued)} />
+            <Stat label="Queued requests" value={formatNumber(rateLimiterStats.queuedRequests)} />
+            <Stat label="Dropped requests" value={formatNumber(rateLimiterStats.droppedRequests)} />
+            <Stat label="Rejected requests" value={formatNumber(rateLimiterStats.rejectedRequests)} />
+          </div>
+          <div style={{ padding: '0 18px 14px 18px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+            <Stat label="High priority queue" value={formatNumber(rateLimiterStats.queueSizes.high)} />
+            <Stat label="Medium priority queue" value={formatNumber(rateLimiterStats.queueSizes.medium)} />
+            <Stat label="Low priority queue" value={formatNumber(rateLimiterStats.queueSizes.low)} />
+          </div>
+        </Card>
+      )}
 
       <Card title="Per-namespace stats">
         <div style={HEADER_STYLE}>

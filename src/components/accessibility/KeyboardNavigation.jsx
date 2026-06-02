@@ -15,7 +15,7 @@ function CommandPalette({ isOpen, onClose }) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
-  const { setConnectedAddress, setActiveTab } = useStore();
+  const { setConnectedAddress, setActiveTab, setSelectedTemplateId } = useStore();
 
   const commands = [
     // Navigation
@@ -29,7 +29,7 @@ function CommandPalette({ isOpen, onClose }) {
     { id: "nav-settings", label: "Go to Settings", category: "Navigation", action: () => setActiveTab("settings") },
 
     // Quick Actions
-    { id: "action-builder", label: "Open Transaction Builder", category: "Actions", action: () => setActiveTab("builder") },
+    { id: "action-builder", label: "Open Transaction Builder", category: "Actions", action: () => setActiveTab("txBuilder") },
     { id: "action-faucet", label: "Request Testnet Funds", category: "Actions", action: () => setActiveTab("faucet") },
     { id: "action-compare", label: "Compare Accounts", category: "Actions", action: () => setActiveTab("compare") },
 
@@ -49,11 +49,11 @@ function CommandPalette({ isOpen, onClose }) {
     // Templates
     ...Object.values(getTransactionTemplates()).map((template) => ({
       id: `template-${template.id}`,
-      label: `Load Template: ${template.name}`,
+      label: `Load Template: ${template.label || template.name || template.id}`,
       category: "Templates",
       action: () => {
-        // Here we'd ideally set some state in the store for the builder
-        setActiveTab("builder");
+        setSelectedTemplateId(template.id);
+        setActiveTab("txBuilder");
         onClose();
       },
     })),

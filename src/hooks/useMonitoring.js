@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   collectHealthSnapshot,
+  collectSystemHealthSnapshot,
   computeHealthScore,
   watchErrors,
 } from "../utils/monitoring";
 import { alertCenter, evaluateAlertRules } from "../lib/alerts";
 
 export function useMonitoring(pollIntervalMs = 15000) {
-  const [snapshot, setSnapshot] = useState(() => collectHealthSnapshot());
+  const [snapshot, setSnapshot] = useState(() => ({
+    ...collectHealthSnapshot(),
+    networkHealth: [],
+    latencyHistory: [],
+  }));
   const [errors, setErrors] = useState([]);
   const [alerts, setAlerts] = useState([]);
 
@@ -16,13 +21,31 @@ export function useMonitoring(pollIntervalMs = 15000) {
       setErrors((prev) => [error, ...prev].slice(0, 30));
     });
 
-    const id = setInterval(() => {
-      setSnapshot(collectHealthSnapshot());
-    }, pollIntervalMs);
+    let active = true;
+
+    const refreshSnapshot = async () => {
+      setSnapshot((current) => ({
+        ...current,
+        ...collectHealthSnapshot(),
+      }));
+
+      try {
+        const systemSnapshot = await collectSystemHealthSnapshot();
+        if (!active) return;
+        setSnapshot(systemSnapshot);
+      } catch (error) {
+        if (!active) return;
+        console.warn('Unable to refresh system health snapshot:', error);
+      }
+    };
+
+    refreshSnapshot();
+    const id = setInterval(refreshSnapshot, pollIntervalMs);
 
     const unsubscribeAlerts = alertCenter.subscribe((items) => setAlerts(items));
 
     return () => {
+      active = false;
       stopErrorWatch();
       clearInterval(id);
       unsubscribeAlerts();

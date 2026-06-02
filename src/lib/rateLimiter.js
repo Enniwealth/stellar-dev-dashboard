@@ -11,6 +11,8 @@ class RateLimiter {
     this.requestQueue = new Map(); // Request queues per endpoint type
     this.batchSize = options.batchSize || 10; // Max batch size for request batching
     this.batchTimeout = options.batchTimeout || 100; // Max wait time for batching (ms)
+    this.throttleMode = options.throttleMode || 'aggressive'; // 'aggressive' | 'conservative'
+    this.maxQueueSize = options.maxQueueSize || 100; // Maximum items in queue before dropping
     this.priorityQueues = {
       high: [],
       medium: [],
@@ -23,6 +25,7 @@ class RateLimiter {
       queuedRequests: 0,
       batchedRequests: 0,
       rejectedRequests: 0,
+      droppedRequests: 0,
       averageResponseTime: 0,
       endpointUsage: new Map()
     };
@@ -127,6 +130,20 @@ class RateLimiter {
     return new Promise((resolve, reject) => {
       queuedRequest.resolve = resolve;
       queuedRequest.reject = reject;
+      
+      // Check if queue is full (conservative mode)
+      if (this.throttleMode === 'conservative') {
+        const totalQueued = this.priorityQueues.high.length + 
+                           this.priorityQueues.medium.length + 
+                           this.priorityQueues.low.length;
+        
+        if (totalQueued >= this.maxQueueSize) {
+          // Drop request in conservative mode if queue is full
+          this.statistics.droppedRequests++;
+          reject(new Error('Request dropped: queue overflow in conservative mode'));
+          return;
+        }
+      }
       
       // Add to appropriate priority queue
       this.priorityQueues[queuedRequest.priority].push(queuedRequest);
@@ -309,6 +326,15 @@ class RateLimiter {
       return { allowed: false, remaining: bucket.tokens, endpointLimited: true };
     }
     
+    // In conservative mode, reduce concurrent parallelism
+    if (this.throttleMode === 'conservative') {
+      // Only allow 1/3 of normal throughput in conservative mode
+      const conservativeLimit = Math.ceil(this.maxRequests / 3);
+      if (bucket.tokens > conservativeLimit) {
+        bucket.tokens = conservativeLimit;
+      }
+    }
+    
     // Check if request is allowed
     if (bucket.tokens > 0) {
       bucket.tokens--;
@@ -398,7 +424,12 @@ class RateLimiter {
         medium: this.priorityQueues.medium.length,
         low: this.priorityQueues.low.length
       },
+      totalQueued: this.priorityQueues.high.length + 
+                   this.priorityQueues.medium.length + 
+                   this.priorityQueues.low.length,
       activeBuckets: this.buckets.size,
+      throttleMode: this.throttleMode,
+      maxQueueSize: this.maxQueueSize,
       timestamp: Date.now()
     };
   }
@@ -444,6 +475,24 @@ class RateLimiter {
       resetTime: bucket.lastRefill + this.windowMs,
       endpointUsage: Object.fromEntries(bucket.endpointUsage)
     };
+  }
+
+  /**
+   * Set throttle mode
+   * @param {string} mode - 'aggressive' or 'conservative'
+   */
+  setThrottleMode(mode) {
+    if (mode === 'aggressive' || mode === 'conservative') {
+      this.throttleMode = mode;
+    }
+  }
+
+  /**
+   * Get current throttle mode
+   * @returns {string} Current throttle mode
+   */
+  getThrottleMode() {
+    return this.throttleMode;
   }
 }
 

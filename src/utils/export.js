@@ -57,6 +57,62 @@ export function exportJson(data, filename) {
   downloadFile(JSON.stringify(data, null, 2), `${filename}.json`);
 }
 
+function escapePdfString(text) {
+  return String(text)
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/\r/g, '')
+}
+
+function buildPdfBlob(text) {
+  const lines = String(text).split('\n');
+  const contentStream = [
+    'BT',
+    '/F1 10 Tf',
+    '50 760 Td',
+    ...lines.map((line, index) => {
+      const safeLine = escapePdfString(line);
+      return index === 0 ? `(${safeLine}) Tj` : `T* (${safeLine}) Tj`;
+    }),
+    'ET'
+  ].join('\n');
+
+  const encoder = new TextEncoder();
+  const streamBytes = encoder.encode(contentStream);
+  const streamLength = streamBytes.length;
+
+  const components = [
+    '%PDF-1.1\n',
+    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+    `5 0 obj\n<< /Length ${streamLength} >>\nstream\n${contentStream}\nendstream\nendobj\n`
+  ];
+
+  let offset = 0;
+  const offsets = [offset];
+  for (const part of components) {
+    offset += encoder.encode(part).length;
+    offsets.push(offset);
+  }
+
+  const xrefOffset = offset;
+  const xrefEntries = ['xref\n0 6\n0000000000 65535 f \n'];
+  for (let i = 1; i <= 5; i += 1) {
+    xrefEntries.push(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`);
+  }
+
+  const trailer = `trailer << /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return new Blob([...components, xrefEntries.join(''), trailer], { type: 'application/pdf' });
+}
+
+export function exportPdf(text, filename) {
+  const blob = buildPdfBlob(text);
+  downloadFile(blob, `${filename}.pdf`, 'application/pdf');
+}
+
 /**
  * Build the complete dashboard backup object from live state.
  * @param {Object} state - Zustand store state snapshot

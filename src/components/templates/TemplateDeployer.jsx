@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { buildDeploymentConfig, buildTemplateSource } from '../../lib/templateManager'
 import { useStore } from '../../lib/store'
+import { downloadScaffold } from '../../lib/contractDevelopment'
 import TemplateCustomizer from './TemplateCustomizer'
 
 export default function TemplateDeployer({ template, onClose }) {
@@ -182,6 +183,50 @@ export default function TemplateDeployer({ template, onClose }) {
           </div>
         )}
       </div>
+      {template && (
+  <div style={{
+    marginTop: '16px',
+    padding: '12px',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'var(--surface)',
+  }}>
+    <h4 style={{ fontSize: '12px', color: 'var(--cyan)', margin: '0 0 8px 0' }}>
+      📥 Quick Downloads
+    </h4>
+    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <button
+        onClick={() => downloadScaffold(template.id)}
+        style={{
+          padding: '4px 10px',
+          fontSize: '10px',
+          background: 'transparent',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-sm)',
+          color: 'var(--text-secondary)',
+          cursor: 'pointer',
+        }}
+      >
+        ⬇ Spec + README
+      </button>
+      <a
+        href="https://developers.stellar.org/docs/smart-contracts"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          padding: '4px 10px',
+          fontSize: '10px',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-sm)',
+          color: 'var(--cyan)',
+          textDecoration: 'none',
+        }}
+      >
+        📖 Stellar Docs
+      </a>
+    </div>
+  </div>
+)}
     </div>
   )
 }
