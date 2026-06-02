@@ -173,20 +173,32 @@ export function createOperation(type, params) {
         account: params.account,
       });
 
-    case "beginSponsoringFutureReserves":
-      return StellarSdk.Operation.beginSponsoringFutureReserves({
+    case "beginSponsoringFutureReserves": {
+      const op = StellarSdk.Operation.beginSponsoringFutureReserves({
         sponsoredId: params.sponsoredId,
       });
+      op.type = op._attributes.body._switch;
+      return op;
+    }
 
-    case "endSponsoringFutureReserves":
-      return StellarSdk.Operation.endSponsoringFutureReserves({});
+    case "endSponsoringFutureReserves": {
+      const op = StellarSdk.Operation.endSponsoringFutureReserves({});
+      op.type = op._attributes.body._switch;
+      return op;
+    }
 
-    case "clawback":
-      return StellarSdk.Operation.clawback({
+    case "clawback": {
+      if (parseFloat(params.amount) <= 0) {
+        throw new Error('Clawback amount must be positive');
+      }
+      const op = StellarSdk.Operation.clawback({
         asset: new StellarSdk.Asset(params.assetCode, params.assetIssuer),
         from: params.from,
         amount: params.amount,
       });
+      op.type = op._attributes.body._switch;
+      return op;
+    }
 
     default:
       throw new Error(`Unsupported operation type: ${type}`);
@@ -324,10 +336,11 @@ export function feeBump({
   }
 
   try {
+    const innerTx = new StellarSdk.Transaction(innerTransaction, NETWORKS[network].passphrase)
     const wrappedTx = StellarSdk.TransactionBuilder.buildFeeBumpTransaction(
       feeSource,
       fee.toString(),
-      innerTransaction,
+      innerTx,
       NETWORKS[network].passphrase,
     );
     return wrappedTx;
