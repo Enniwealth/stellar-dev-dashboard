@@ -42,6 +42,7 @@ import AdvancedSearch from './components/dashboard/AdvancedSearch'
 import CacheStats from './components/dashboard/CacheStats'
 import LiveActivityFeed from './components/dashboard/LiveActivityFeed'
 import ClaimableBalances from './components/dashboard/ClaimableBalances'
+import DataExport from './components/dashboard/DataExport'
 import RealTimeNotificationCenter from './components/notifications/RealTimeNotificationCenter'
 import { useRealTimeNotifications } from './hooks/useRealTimeNotifications'
 import { pruneCaches } from './lib/cacheManager'
@@ -122,6 +123,7 @@ const TABS: Record<string, TabComponent> = {
   cacheStats: CacheStats,
   liveActivity: LiveActivityFeed,
   claimableBalances: ClaimableBalances,
+  dataExport: DataExport,
 }
 
 function NotificationBell({ onClick }: { onClick: () => void }) {

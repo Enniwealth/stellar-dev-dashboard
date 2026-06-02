@@ -3,9 +3,10 @@ import { useSettings } from "../../hooks/useSettings";
 import { useRateLimiter } from "../../hooks/useRateLimiter";
 import { useStore } from "../../lib/store";
 import { getEnvironmentConfig } from "../../lib/config";
-import { saveAlertRule, getAlertRules, deleteAlertRule } from "../../lib/alertRulesDb"; // Import IndexedDB helpers
-import { ALERT_RULE_TYPE, ALERT_CHANNEL } from "../../lib/alerts"; // Import alert types
+import { saveAlertRule, getAlertRules, deleteAlertRule } from "../../lib/alertRulesDb";
+import { ALERT_RULE_TYPE, ALERT_CHANNEL } from "../../lib/alerts";
 import PluginRegistryView from "./PluginRegistryView";
+import DataExport from "./DataExport";
 
 function FieldLabel({ children }) {
   return (
@@ -598,6 +599,15 @@ export default function Settings() {
         {apiKey && (
           <div style={{ fontSize: "11px", color: "var(--green)" }}>✓ API key active</div>
         )}
+      </div>
+
+      {/* Export & Import */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius-lg)", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <FieldLabel>Export &amp; Import</FieldLabel>
+        <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "4px" }}>
+          Download your account data and settings, or restore from a backup file.
+        </div>
+        <DataExport />
       </div>
     </div>
   );
