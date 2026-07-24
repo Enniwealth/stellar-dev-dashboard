@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { parseContractWasm } from "./contractInvoker.js";
 
 function escapeMarkdown(text = "") {
   return String(text || "").replace(/\r\n|\r|\n/g, " ").trim();
@@ -94,6 +93,17 @@ export function generateMarkdownFromPayload(payload = {}) {
 }
 
 export async function generateAndSave(contractId, network = "testnet", outPath = null) {
+  // Dynamically import the contract parser to avoid requiring @stellar/stellar-sdk at module load time
+  let parseContractWasm = null;
+  try {
+    const mod = await import("./contractInvoker.js");
+    parseContractWasm = mod.parseContractWasm;
+  } catch (err) {
+    throw new Error(
+      `Could not load contract parser. Ensure dependencies are installed. (${err.message || err})`,
+    );
+  }
+
   const payload = await parseContractWasm(contractId, network);
   const md = generateMarkdownFromPayload(payload);
 
