@@ -57,6 +57,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'alertRules', label: 'Alerts', icon: '🔔' },
   { id: 'portfolio', label: 'Portfolio', icon: '◐' },
   { id: 'portfolioAnalytics', label: 'Portfolio Analytics', icon: '📊' },
+  { id: 'autonomousTrading', label: 'Trading Agent', icon: '🤖' },
   { id: 'charts', label: 'Charts', icon: '▤' },
   { id: 'analytics', label: 'Analytics', icon: '◍' },
   { id: 'designSystem', label: 'Design System', icon: '◈' },
