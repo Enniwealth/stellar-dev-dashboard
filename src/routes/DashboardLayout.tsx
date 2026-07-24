@@ -38,6 +38,11 @@ import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
 import DebugAssistantButton from '../components/debug/DebugAssistantButton';
 import DebugAssistantPanel from '../components/debug/DebugAssistantPanel';
+import { useExpertise } from '../context/ExpertiseContext';
+import { useExpertiseTracking } from '../hooks/useExpertiseTracking';
+import ExpertiseBadge from '../components/expertise/ExpertiseBadge';
+import ExpertiseProgressPanel from '../components/expertise/ExpertiseProgressPanel';
+import '../styles/expertise.css';
 
 interface SearchResult {
   type?: string;
@@ -235,7 +240,17 @@ export default function DashboardLayout() {
     toggleDebugAssistant,
   } = useStore();
   const { isMobile, isTablet } = useResponsive();
+  const { level, isNovice, setLevel, updateSignals } = useExpertise();
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
+  const [expertiseProgressOpen, setExpertiseProgressOpen] = useState<boolean>(false);
+
+  // Initialize expertise tracking (auto-collects interaction patterns)
+  const {
+    trackFeatureInteraction,
+    trackTaskComplete,
+    trackTaskError,
+    trackShortcutUsed,
+  } = useExpertiseTracking({ enabled: true });
 
   useEffect(() => {
     // v2: full multi-layer cache initialization (warm, prune, SW bridge)
@@ -248,6 +263,18 @@ export default function DashboardLayout() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-expertise', level);
+  }, [level]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      updateSignals((current) => ({ sessionDurationMinutes: current.sessionDurationMinutes + 1 }));
+    }, 60000);
+
+    return () => window.clearInterval(timer);
+  }, [updateSignals]);
 
   useEffect(() => {
     initializeErrorReporting({
@@ -387,8 +414,18 @@ export default function DashboardLayout() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <NetworkIndicator />
             </div>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <ExpertiseBadge
+                onLevelChange={() => {
+                  trackFeatureInteraction('expertise-badge');
+                }}
+              />
+            </div>
             <button
-              onClick={() => setPreferencesOpen(true)}
+              onClick={() => {
+                setPreferencesOpen(true);
+                trackFeatureInteraction('preferences');
+              }}
               title="User Preferences"
               style={{
                 width: '36px',

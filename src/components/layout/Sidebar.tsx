@@ -5,6 +5,10 @@ import CopyableValue from '../dashboard/CopyableValue';
 import { NETWORKS, updateCustomNetworkConfig, switchToCustomProfile, loadCustomNetworkProfiles } from '../../lib/stellar';
 import { getActiveProfile } from '../../lib/userPreferences';
 import { preloadTab } from '../../hooks/usePreload';
+import { useAdaptiveComponents } from '../../hooks/useAdaptiveComponents';
+import { useExpertiseTracking } from '../../hooks/useExpertiseTracking';
+import ExpertiseBadge from '../expertise/ExpertiseBadge';
+import ExpertiseProgressPanel from '../expertise/ExpertiseProgressPanel';
 
 const SESSION_API_KEY = 'stellar_custom_api_key';
 
@@ -98,6 +102,10 @@ export default function Sidebar({ isMobile = false }: SidebarProps) {
     isMobileMenuOpen,
     setMobileMenuOpen,
   } = useStore();
+
+  const { getAdaptation, sidebarAdaptation, isNovice, isExpert } = useAdaptiveComponents();
+  const { trackFeatureInteraction } = useExpertiseTracking({ enabled: true });
+  const [showExpertisePanel, setShowExpertisePanel] = useState(false);
 
   const [customProfiles, setCustomProfiles] = useState<CustomProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
