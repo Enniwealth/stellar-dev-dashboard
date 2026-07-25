@@ -71,6 +71,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'governance', label: 'Governance', icon: '🗳' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
   { id: 'audit', label: 'Audit', icon: '⊟' },
+  { id: 'personalization', label: 'AI Personalization', icon: '🧠' },
   { id: 'security', label: 'Security', icon: '🛡️' },
 ];
 
