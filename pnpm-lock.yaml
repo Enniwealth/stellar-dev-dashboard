@@ -23,9 +23,6 @@ importers:
       '@tensorflow/tfjs':
         specifier: ^4.22.0
         version: 4.22.0(seedrandom@3.0.5)
-      '@tensorflow/tfjs-node':
-        specifier: ^4.22.0
-        version: 4.22.0(seedrandom@3.0.5)
       d3-array:
         specifier: ^3.2.4
         version: 3.2.4
@@ -220,6 +217,9 @@ importers:
       '@ledgerhq/hw-transport-webusb':
         specifier: ^6.29.4
         version: 6.34.4
+      '@tensorflow/tfjs-node':
+        specifier: 4.22.0
+        version: 4.22.0(seedrandom@3.0.5)
 
   mobile:
     dependencies:
@@ -2284,66 +2284,79 @@ packages:
     resolution: {integrity: sha512-n1GJHPOvpIfhi3TmrCeh6S6URt9BFCt0KQE3qvexyGCTAKpR4Lg+eWvNZEqu7epxwus/8ElT3hacYEucm49SZg==}
     cpu: [arm]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-arm-musleabihf@4.62.2':
     resolution: {integrity: sha512-JqgflS8wEB+UXV/vS1RpRbifGBeN4D5lz8D8oOFbFZw4vedvdOgCFAjfBmIMdW3yL10XpQQ0Ambepw6MXrhOnA==}
     cpu: [arm]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-arm64-gnu@4.62.2':
     resolution: {integrity: sha512-wnFJkogWvN4jm/hQRF2UBaeUmk20j5+DmHvoyWii2b8HJDyvz1MF2OU/6ynXt2KR63rbZLWkFpoytpdc/yBuSA==}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-arm64-musl@4.62.2':
     resolution: {integrity: sha512-HVu2bp0zhvJ8xHEV9+UUs7S90VadmBSY3LcIMvozbPo4AuMGDWlz3ymHLHZPX4hR67TKTt8Qp5PJ5RBg/i+RMQ==}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-loong64-gnu@4.62.2':
     resolution: {integrity: sha512-mQqqAV8QaoSgr9I2fKDLY2BAVvmKjWoGiu/cSYQonsLvtqwEn1E4QYfnCOcp5zoEqNhsDYin1s6jx/VJmrxlZg==}
     cpu: [loong64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-loong64-musl@4.62.2':
     resolution: {integrity: sha512-IxKLoxCQ2IWi6bT2akyDUBGsOImDKB+sPp4EsTmwFQ/fMwpCKm8uLSSgP/Kx/QYUgKis6SEZ5/Nlhup0DIA0PQ==}
     cpu: [loong64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-ppc64-gnu@4.62.2':
     resolution: {integrity: sha512-Mk5ha2RQSgyFfmYYLkBpPnUk8D8FriBxesO1u9O75X0mHgXL1UQcH5Itl2lurWL2tj0RxV9b9tJgipac0hRY9A==}
     cpu: [ppc64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-ppc64-musl@4.62.2':
     resolution: {integrity: sha512-CjvEnqJL/0/TQ3TXX3OPIJ/kmBellrWd4heXUmHeJlTnmwjKpSJzoehLaL6Xk0ZnMHBu9dZuFADNOrtjF4v+2w==}
     cpu: [ppc64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-riscv64-gnu@4.62.2':
     resolution: {integrity: sha512-1SiZbzwdkaDURsew/tSOrooKiYy7EQGT6m8ufavAi9NEyQb/6VuIxFXAL1fqa4iZe3g4NbNk4P7J32z2tw5Mgg==}
     cpu: [riscv64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-riscv64-musl@4.62.2':
     resolution: {integrity: sha512-nQts12zJ3NQRoE6uYljOH89v7szzLDvG2JD/vsX+vGXU8w/At1GowTZ5/7qeFQ8m7L55rpR8Okugnuo5bgjy2Q==}
     cpu: [riscv64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-linux-s390x-gnu@4.62.2':
     resolution: {integrity: sha512-E9/ll019jhPIJgpzfZoIkBGhcz+kKNgVWYRY0zr9srBdPPFVpvOKW8VaJKUbeK+eZXyQF9ltME+Kk6affeaPgg==}
     cpu: [s390x]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-x64-gnu@4.62.2':
     resolution: {integrity: sha512-5BqxR/pshjey51iliyzTD5Xi3EN0aLmQ2lZ3lvefVV9c82BvrLo2/6OT55iifpWBufs6kdwWbuOKS841DrmK9A==}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@rollup/rollup-linux-x64-musl@4.62.2':
     resolution: {integrity: sha512-uNN83XxQrRAh/w0/pmAfibcwyb6YWt4gP+dpnQKPVJshAloQ785ii8CT8ZCIxkGg9opVsvAlGhFitSm6D1Jjpg==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-openbsd-x64@4.62.2':
     resolution: {integrity: sha512-srjEIxSH3LRnJN6THczDHWQplqEMFiAJrTab0msUryh9kwNpkICf3Ea6q6MN/2cZwRFUNx5w+h6Hpi4QuHS6Zg==}
@@ -9536,6 +9549,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+    optional: true
 
   '@mswjs/interceptors@0.41.9':
     dependencies:
@@ -9804,9 +9818,7 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
       - '@babel/preset-env'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.76.9': {}
 
@@ -10357,6 +10369,7 @@ snapshots:
       - encoding
       - seedrandom
       - supports-color
+    optional: true
 
   '@tensorflow/tfjs@4.22.0(seedrandom@3.0.5)':
     dependencies:
@@ -10877,7 +10890,8 @@ snapshots:
 
   '@webgpu/types@0.1.38': {}
 
-  abbrev@1.1.1: {}
+  abbrev@1.1.1:
+    optional: true
 
   abort-controller@3.0.0:
     dependencies:
@@ -10896,11 +10910,13 @@ snapshots:
 
   acorn@8.17.0: {}
 
-  adm-zip@0.5.18: {}
+  adm-zip@0.5.18:
+    optional: true
 
   agent-base@4.3.0:
     dependencies:
       es6-promisify: 5.0.0
+    optional: true
 
   agent-base@6.0.2:
     dependencies:
@@ -10967,12 +10983,14 @@ snapshots:
       normalize-path: 3.0.0
       picomatch: 2.3.2
 
-  aproba@2.1.0: {}
+  aproba@2.1.0:
+    optional: true
 
   are-we-there-yet@2.0.0:
     dependencies:
       delegates: 1.0.0
       readable-stream: 3.6.2
+    optional: true
 
   argparse@1.0.10:
     dependencies:
@@ -11404,7 +11422,8 @@ snapshots:
 
   check-error@2.1.3: {}
 
-  chownr@2.0.0: {}
+  chownr@2.0.0:
+    optional: true
 
   chrome-launcher@0.13.4:
     dependencies:
@@ -11523,7 +11542,8 @@ snapshots:
       color-name: 1.1.4
       simple-swizzle: 0.2.4
 
-  color-support@1.1.3: {}
+  color-support@1.1.3:
+    optional: true
 
   color@4.2.3:
     dependencies:
@@ -11576,7 +11596,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  console-control-strings@1.1.0: {}
+  console-control-strings@1.1.0:
+    optional: true
 
   content-disposition@0.5.4:
     dependencies:
@@ -11775,6 +11796,7 @@ snapshots:
   debug@3.2.7:
     dependencies:
       ms: 2.1.3
+    optional: true
 
   debug@4.4.3:
     dependencies:
@@ -11818,7 +11840,8 @@ snapshots:
 
   delayed-stream@1.0.0: {}
 
-  delegates@1.0.0: {}
+  delegates@1.0.0:
+    optional: true
 
   depd@2.0.0: {}
 
@@ -11831,7 +11854,8 @@ snapshots:
 
   destroy@1.2.0: {}
 
-  detect-libc@2.1.2: {}
+  detect-libc@2.1.2:
+    optional: true
 
   detect-newline@3.1.0: {}
 
@@ -12045,11 +12069,13 @@ snapshots:
       is-date-object: 1.1.0
       is-symbol: 1.1.1
 
-  es6-promise@4.2.8: {}
+  es6-promise@4.2.8:
+    optional: true
 
   es6-promisify@5.0.0:
     dependencies:
       es6-promise: 4.2.8
+    optional: true
 
   esbuild-register@3.6.0(esbuild@0.25.12):
     dependencies:
@@ -12618,6 +12644,7 @@ snapshots:
   fs-minipass@2.1.0:
     dependencies:
       minipass: 3.3.6
+    optional: true
 
   fs.realpath@1.0.0: {}
 
@@ -12654,6 +12681,7 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
       wide-align: 1.1.5
+    optional: true
 
   generator-function@2.0.1: {}
 
@@ -12752,7 +12780,8 @@ snapshots:
       merge2: 1.4.1
       slash: 3.0.0
 
-  google-protobuf@3.21.4: {}
+  google-protobuf@3.21.4:
+    optional: true
 
   gopd@1.2.0: {}
 
@@ -12782,7 +12811,8 @@ snapshots:
     dependencies:
       has-symbols: 1.1.0
 
-  has-unicode@2.0.1: {}
+  has-unicode@2.0.1:
+    optional: true
 
   hasown@2.0.4:
     dependencies:
@@ -12846,6 +12876,7 @@ snapshots:
       debug: 3.2.7
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   https-proxy-agent@5.0.1:
     dependencies:
@@ -14056,8 +14087,10 @@ snapshots:
   minipass@3.3.6:
     dependencies:
       yallist: 4.0.0
+    optional: true
 
-  minipass@5.0.0: {}
+  minipass@5.0.0:
+    optional: true
 
   minipass@7.1.3: {}
 
@@ -14065,6 +14098,7 @@ snapshots:
     dependencies:
       minipass: 3.3.6
       yallist: 4.0.0
+    optional: true
 
   mitt@3.0.1: {}
 
@@ -14159,6 +14193,7 @@ snapshots:
   nopt@5.0.0:
     dependencies:
       abbrev: 1.1.1
+    optional: true
 
   normalize-path@3.0.0: {}
 
@@ -14177,6 +14212,7 @@ snapshots:
       console-control-strings: 1.1.0
       gauge: 3.0.2
       set-blocking: 2.0.0
+    optional: true
 
   nth-check@2.1.1:
     dependencies:
@@ -14777,6 +14813,7 @@ snapshots:
       inherits: 2.0.4
       string_decoder: 1.3.0
       util-deprecate: 1.0.2
+    optional: true
 
   readline@1.3.0: {}
 
@@ -15448,6 +15485,7 @@ snapshots:
       minizlib: 2.1.2
       mkdirp: 1.0.4
       yallist: 4.0.0
+    optional: true
 
   teex@1.0.1:
     dependencies:
@@ -15731,7 +15769,8 @@ snapshots:
     dependencies:
       react: 18.3.1
 
-  util-deprecate@1.0.2: {}
+  util-deprecate@1.0.2:
+    optional: true
 
   util@0.12.5:
     dependencies:
@@ -15941,6 +15980,7 @@ snapshots:
   wide-align@1.1.5:
     dependencies:
       string-width: 4.2.3
+    optional: true
 
   word-wrap@1.2.5: {}
 
@@ -16014,7 +16054,8 @@ snapshots:
 
   yallist@3.1.1: {}
 
-  yallist@4.0.0: {}
+  yallist@4.0.0:
+    optional: true
 
   yaml@2.9.0:
     optional: true
