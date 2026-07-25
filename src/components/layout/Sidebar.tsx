@@ -63,6 +63,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'featureFlags', label: 'Flags', icon: '🚩' },
   { id: 'txPatterns', label: 'AI Patterns', icon: '🧠' },
   { id: 'capacityPlanning', label: 'Capacity AI', icon: '📈' },
+  { id: 'backupOptimizer', label: 'Backup AI', icon: '💾' },
   { id: 'systemHealth', label: 'Health', icon: '⚕' },
   { id: 'monitoringDashboards', label: 'Monitoring', icon: '📊' },
   { id: 'logAnalyzer', label: 'Log Analyzer', icon: '📋' },
