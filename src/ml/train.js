@@ -1,9 +1,14 @@
 // Training pipeline: trains Isolation Forest and a simple TFJS classifier for pattern recognition
-const fs = require('fs');
-const path = require('path');
-const tf = require('@tensorflow/tfjs-node');
-const { extractFeatures } = require('./feature_extraction');
-const { IsolationForest } = require('./isolation_forest');
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { createRequire } from 'module'
+import tf from '@tensorflow/tfjs-node'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const require = createRequire(import.meta.url)
+const { extractFeatures } = require('./feature_extraction.cjs')
+const { IsolationForest } = require('./isolation_forest.cjs')
 
 async function train() {
   const dataPath = path.resolve(__dirname, 'data', 'train.json');
@@ -36,8 +41,12 @@ async function train() {
   console.log('TFJS model saved.');
 }
 
-if (require.main === module) {
-  train().catch(err => { console.error(err); process.exit(1); });
+const currentFile = fileURLToPath(import.meta.url)
+if (process.argv[1] && path.resolve(process.argv[1]) === currentFile) {
+  train().catch(err => {
+    console.error(err)
+    process.exit(1)
+  })
 }
 
-module.exports = { train };
+export { train }
