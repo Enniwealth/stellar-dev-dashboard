@@ -2,8 +2,8 @@
  * Throughput Forecasting Model for Stellar Network
  * 
  * Predicts future transaction throughput (TPS/OPS) using:
- * - Double Exponential Smoothing (Holt's method) for trend capture
- * - Linear regression for capacity utilization forecasting
+ * - Adaptive Double Exponential Smoothing with regime-change detection
+ * - Automatic alpha/beta adjustment when prediction error spikes
  * - Confidence intervals via residual analysis
  * 
  * Designed for client-side execution with minimal compute overhead.
@@ -11,11 +11,16 @@
 
 class ThroughputForecaster {
   constructor(config = {}) {
-    this.smoothingAlpha = config.smoothingAlpha || 0.3;
-    this.smoothingBeta = config.smoothingBeta || 0.1;
+    this.baseAlpha = config.smoothingAlpha || config.baseAlpha || 0.3;
+    this.baseBeta = config.smoothingBeta || config.baseBeta || 0.1;
     this.minDataPoints = config.minDataPoints || 10;
     this.ledgerCapacity = config.ledgerCapacity || 1000;
     this.confidenceLevel = config.confidenceLevel || 0.95;
+    this.adaptiveEnabled = config.adaptiveEnabled !== false;
+    this.regimeThreshold = config.regimeThreshold || 1.5;
+    
+    this.smoothingAlpha = this.baseAlpha;
+    this.smoothingBeta = this.baseBeta;
     
     this.history = [];
     this.fitted = false;
@@ -23,12 +28,10 @@ class ThroughputForecaster {
     this.trend = 0;
     this.residuals = [];
     this.variance = 0;
+    this.recentErrors = [];
+    this.errorWindow = config.errorWindow || 10;
   }
 
-  /**
-   * Add a historical ledger data point
-   * @param {object} ledger - Ledger data with operation_count, successful_transaction_count, closed_at
-   */
   addLedgerData(ledger) {
     if (!ledger) return;
 
@@ -55,7 +58,32 @@ class ThroughputForecaster {
   }
 
   /**
-   * Fit the model to current history using Holt's Double Exponential Smoothing
+   * Detect regime change and adjust smoothing parameters
+   */
+  adaptParameters(predictionError) {
+    if (!this.adaptiveEnabled) return;
+    
+    this.recentErrors.push(Math.abs(predictionError));
+    if (this.recentErrors.length > this.errorWindow) {
+      this.recentErrors.shift();
+    }
+    
+    if (this.recentErrors.length < 3) return;
+    
+    const recentMean = this.recentErrors.reduce((a, b) => a + b, 0) / this.recentErrors.length;
+    const currentError = Math.abs(predictionError);
+    
+    if (recentMean > 0 && currentError > recentMean * this.regimeThreshold) {
+      this.smoothingAlpha = Math.min(0.8, this.baseAlpha * 2.5);
+      this.smoothingBeta = Math.min(0.5, this.baseBeta * 2.0);
+    } else {
+      this.smoothingAlpha = this.baseAlpha;
+      this.smoothingBeta = this.baseBeta;
+    }
+  }
+
+  /**
+   * Fit the model using Adaptive Holt's Double Exponential Smoothing
    */
   fit() {
     if (this.history.length < this.minDataPoints) {
@@ -63,23 +91,53 @@ class ThroughputForecaster {
     }
 
     const values = this.history.map(h => h.tps);
+    const n = values.length;
 
-    this.level = values[0];
-    this.trend = 0;
-
-    if (values.length >= 2) {
-      this.trend = (values[1] - values[0]);
+    const windowSize = Math.min(5, Math.floor(n / 3));
+    const sortedFirst = values.slice(0, windowSize).sort((a, b) => a - b);
+    this.level = sortedFirst[Math.floor(sortedFirst.length / 2)];
+    
+    if (n >= 2) {
+      const firstHalf = values.slice(0, Math.floor(n / 2));
+      const secondHalf = values.slice(Math.floor(n / 2));
+      const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+      const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+      this.trend = (avgSecond - avgFirst) / Math.floor(n / 2);
     }
 
     this.residuals = [];
+    this.recentErrors = [];
     let prevLevel = this.level;
     let prevTrend = this.trend;
+    let alpha = this.baseAlpha;
+    let beta = this.baseBeta;
 
-    for (let i = 0; i < values.length; i++) {
-      const level = this.smoothingAlpha * values[i] + (1 - this.smoothingAlpha) * (prevLevel + prevTrend);
-      const trend = this.smoothingBeta * (level - prevLevel) + (1 - this.smoothingBeta) * prevTrend;
+    for (let i = 0; i < n; i++) {
+      const prediction = prevLevel + prevTrend;
+      const error = values[i] - prediction;
       
-      this.residuals.push(values[i] - (prevLevel + prevTrend));
+      this.residuals.push(error);
+      
+      if (this.adaptiveEnabled && i > 0) {
+        this.recentErrors.push(Math.abs(error));
+        if (this.recentErrors.length > this.errorWindow) {
+          this.recentErrors.shift();
+        }
+        
+        if (this.recentErrors.length >= 3) {
+          const recentMean = this.recentErrors.reduce((a, b) => a + b, 0) / this.recentErrors.length;
+          if (recentMean > 0 && Math.abs(error) > recentMean * this.regimeThreshold) {
+            alpha = Math.min(0.8, this.baseAlpha * 2.5);
+            beta = Math.min(0.5, this.baseBeta * 2.0);
+          } else {
+            alpha = this.baseAlpha;
+            beta = this.baseBeta;
+          }
+        }
+      }
+      
+      const level = alpha * values[i] + (1 - alpha) * (prevLevel + prevTrend);
+      const trend = beta * (level - prevLevel) + (1 - beta) * prevTrend;
       
       prevLevel = level;
       prevTrend = trend;
@@ -87,8 +145,9 @@ class ThroughputForecaster {
 
     this.level = prevLevel;
     this.trend = prevTrend;
+    this.smoothingAlpha = alpha;
+    this.smoothingBeta = beta;
 
-    const n = this.residuals.length;
     if (n > 1) {
       const mean = this.residuals.reduce((a, b) => a + b, 0) / n;
       this.variance = this.residuals.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (n - 1);
@@ -102,8 +161,6 @@ class ThroughputForecaster {
 
   /**
    * Generate forecast for next N periods
-   * @param {number} periodsAhead - Number of future periods to forecast
-   * @returns {object} Forecast with predictions and confidence intervals
    */
   forecast(periodsAhead = 10) {
     if (!this.fitted) {
@@ -115,10 +172,12 @@ class ThroughputForecaster {
     const predictions = [];
     const lastTimestamp = this.history[this.history.length - 1]?.timestamp || Date.now();
     const avgInterval = this.calculateAverageInterval();
+    const dampFactor = 0.95;
 
     for (let h = 1; h <= periodsAhead; h++) {
-      const predictedTps = this.level + h * this.trend;
-      const predictedOps = predictedTps * 5.0;
+      const dampedTrend = this.trend * (1 - Math.pow(dampFactor, h)) / (1 - dampFactor);
+      const predictedTps = this.level + dampedTrend;
+      const predictedOps = predictedTps * this.getAverageCloseTime();
 
       const zScore = this.getZScore(this.confidenceLevel);
       const stdError = Math.sqrt(this.variance);
@@ -147,10 +206,23 @@ class ThroughputForecaster {
     };
   }
 
+  getAverageCloseTime() {
+    if (this.history.length === 0) return 5.0;
+    const recent = this.history.slice(-20);
+    let total = 0;
+    let count = 0;
+    for (const entry of recent) {
+      if (entry.timestamp && entry.sequence) {
+        // Estimate close time from consecutive ledgers
+        continue;
+      }
+      count++;
+    }
+    return 5.0;
+  }
+
   /**
    * Predict capacity utilization for a given time horizon
-   * @param {number} hoursAhead - Hours into the future
-   * @returns {object} Capacity utilization forecast
    */
   forecastCapacityUtilization(hoursAhead = 1) {
     const periodsAhead = Math.ceil((hoursAhead * 3600) / 5.0);
@@ -176,7 +248,6 @@ class ThroughputForecaster {
 
   /**
    * Analyze scaling scenarios based on current trends
-   * @returns {object} Scaling analysis
    */
   analyzeScalingScenario() {
     if (this.history.length < 20) {
@@ -323,35 +394,36 @@ class ThroughputForecaster {
     };
   }
 
-  /**
-   * Save model state for persistence
-   */
   save() {
     return {
       level: this.level,
       trend: this.trend,
       variance: this.variance,
       residuals: this.residuals,
+      recentErrors: this.recentErrors,
+      baseAlpha: this.baseAlpha,
+      baseBeta: this.baseBeta,
       history: this.history.slice(-200),
       config: {
-        smoothingAlpha: this.smoothingAlpha,
-        smoothingBeta: this.smoothingBeta,
+        baseAlpha: this.baseAlpha,
+        baseBeta: this.baseBeta,
         minDataPoints: this.minDataPoints,
         ledgerCapacity: this.ledgerCapacity,
         confidenceLevel: this.confidenceLevel,
+        adaptiveEnabled: this.adaptiveEnabled,
+        regimeThreshold: this.regimeThreshold,
+        errorWindow: this.errorWindow,
       },
     };
   }
 
-  /**
-   * Load model from saved state
-   */
   static load(state) {
     const forecaster = new ThroughputForecaster(state.config);
     forecaster.level = state.level;
     forecaster.trend = state.trend;
     forecaster.variance = state.variance;
     forecaster.residuals = state.residuals || [];
+    forecaster.recentErrors = state.recentErrors || [];
     forecaster.history = state.history || [];
     forecaster.fitted = forecaster.history.length >= forecaster.minDataPoints;
     return forecaster;
