@@ -77,7 +77,7 @@ export function useThroughputForecast(
       const forecaster = forecasterRef.current
       forecaster.history = []
 
-      for (const ledger of ledgers.reverse()) {
+      for (const ledger of [...ledgers].reverse()) {
         forecaster.addLedgerData(ledger)
       }
 

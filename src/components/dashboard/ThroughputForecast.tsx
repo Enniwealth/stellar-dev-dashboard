@@ -4,9 +4,9 @@ import { useThroughputForecast } from '../../hooks/useThroughputForecast'
 import { useStore } from '../../lib/store'
 
 const HORIZON_OPTIONS = [
-  { label: '1h', hours: 1 },
-  { label: '6h', hours: 6 },
-  { label: '24h', hours: 24 },
+  { label: '1h', periods: 20 },
+  { label: '6h', periods: 60 },
+  { label: '24h', periods: 120 },
 ]
 
 const STYLE: Record<string, React.CSSProperties> = {
@@ -135,12 +135,12 @@ function getUtilizationColor(utilization: number): string {
 
 export default function ThroughputForecast() {
   const { network } = useStore()
-  const [horizon, setHorizon] = useState(1)
+  const [horizon, setHorizon] = useState(20)
 
   const { forecast, capacityForecast, loading, error, dataPointsCount, lastUpdated } = useThroughputForecast(
     network,
     100,
-    20,
+    horizon,
     30000
   )
 
@@ -171,8 +171,8 @@ export default function ThroughputForecast() {
           {HORIZON_OPTIONS.map(opt => (
             <button
               key={opt.label}
-              style={STYLE.controlBtn(horizon === opt.hours)}
-              onClick={() => setHorizon(opt.hours)}
+              style={STYLE.controlBtn(horizon === opt.periods)}
+              onClick={() => setHorizon(opt.periods)}
             >
               {opt.label}
             </button>

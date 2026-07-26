@@ -130,7 +130,7 @@ class ThroughputForecaster {
         predictedTps: Math.max(0, predictedTps),
         predictedOps: Math.max(0, predictedOps),
         lowerBound: Math.max(0, predictedTps - margin),
-        upperBound: predictedTps + margin,
+        upperBound: Math.max(0, predictedTps + margin),
         congestionUtilization: Math.min(Math.max(0, predictedOps) / this.ledgerCapacity, 1.0),
       });
     }
@@ -331,6 +331,7 @@ class ThroughputForecaster {
       level: this.level,
       trend: this.trend,
       variance: this.variance,
+      residuals: this.residuals,
       history: this.history.slice(-200),
       config: {
         smoothingAlpha: this.smoothingAlpha,
@@ -350,6 +351,7 @@ class ThroughputForecaster {
     forecaster.level = state.level;
     forecaster.trend = state.trend;
     forecaster.variance = state.variance;
+    forecaster.residuals = state.residuals || [];
     forecaster.history = state.history || [];
     forecaster.fitted = forecaster.history.length >= forecaster.minDataPoints;
     return forecaster;
