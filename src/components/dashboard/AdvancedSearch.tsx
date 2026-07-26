@@ -420,8 +420,8 @@ export default function AdvancedSearch() {
 
       {/* Search Bar — keyword mode only */}
       {!semanticMode && (
-      <div
-        style={{
+        <div
+          style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
@@ -918,7 +918,6 @@ export default function AdvancedSearch() {
           </div>
         </div>
       )}
-      {/* end keyword search bar */}
 
       {/* Search Results */}
       {!semanticMode && searchResults && (
