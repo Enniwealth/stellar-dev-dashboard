@@ -445,6 +445,7 @@ export default function DashboardLayout() {
           <DebugAssistantPanel onClose={() => toggleDebugAssistant()} />
         )}
         {isMobile && <MobileNavigation />}
+        <TipButton />
         {preferencesOpen && (
           <div
             style={{

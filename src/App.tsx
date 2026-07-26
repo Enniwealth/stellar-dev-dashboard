@@ -8,6 +8,7 @@ import { AccessibilityProvider } from './context/AccessibilityContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { DeveloperTools } from './components/DeveloperTools';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
+import { TipProvider } from './components/ai/TipProvider';
 
 const DashboardLayout = lazy(() => import('./routes/DashboardLayout'));
 
@@ -53,8 +54,8 @@ export default function App() {
           {showOnboarding && <OnboardingFlow onComplete={() => setShowOnboarding(false)} />}
           <Suspense fallback={<AppLoadingFallback />}>
             <Routes>
-              <Route path="/connect" element={<DashboardLayout />} />
-              <Route path="/*" element={<DashboardLayout />} />
+              <Route path="/connect" element={<TipProvider><DashboardLayout /></TipProvider>} />
+              <Route path="/*" element={<TipProvider><DashboardLayout /></TipProvider>} />
             </Routes>
           </Suspense>
           <DeveloperTools />
