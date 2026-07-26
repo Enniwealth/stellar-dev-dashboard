@@ -4,7 +4,8 @@
   "description": "A real-time developer dashboard for the Stellar network with advanced AI-enhanced transaction fee prediction",
   "type": "module",
   "scripts": {
-    "ml:train": "node src/ml/train.js",
+    "ml:train:liquidity": "node src/ml/trainLiquidity.cjs",
+    "ml:server:liquidity": "node src/ml/liquidityServer.js",
     "ml:server": "node src/ml/server.js",
     "ml:federated-server": "node src/ml/federated/server.js",
     "dev": "vite",

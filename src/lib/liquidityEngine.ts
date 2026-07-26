@@ -4,8 +4,9 @@
  */
 
 import { fetchOrderBook, fetchTrades, parseAssetString } from './dex';
+import { LiquidityModel } from './liquidityModel';
 import { getServer } from './stellar';
-import {
+import { extractTimeSeriesFeatures,
   predictLiquidityAndPrice,
   LiquidityPredictionResult,
   MarketSnapshot,
@@ -55,12 +56,19 @@ class LiquidityEngine {
   private activePair: DEXPair = POPULAR_DEX_PAIRS[0];
   private listeners: Set<PredictionListener> = new Set();
   private timer: any = null;
+  private model: LiquidityModel = new LiquidityModel('model/liquidity');
   private currentResult: LiquidityPredictionResult | null = null;
   private isStreaming: boolean = false;
 
   constructor() {
     // Generate initial synthetic/real prediction snapshot
     this.currentResult = this.generateSamplePrediction(this.activePair.id);
+    // Load the ML model asynchronously (non-blocking)
+    this.loadModel().catch(console.error);
+  }
+
+  public async loadModel(): Promise<void> {
+    await this.model.loadModel();
   }
 
   public getActivePair(): DEXPair {
@@ -133,7 +141,21 @@ class LiquidityEngine {
         snapshot = this.generateSampleMarketSnapshot(this.activePair.id);
       }
 
-      const result = predictLiquidityAndPrice(snapshot);
+      const baseResult = predictLiquidityAndPrice(snapshot);
+
+      let mlDelta = 0;
+      if (this.model) {
+        const features = extractTimeSeriesFeatures(snapshot);
+        const prediction = await this.model.predict(features);
+        mlDelta = prediction.predictedLiquidityIndex ?? 0;
+      }
+
+      const predictedLiquidityIndex = Math.min(100, Math.max(0, baseResult.predictedLiquidityIndex + mlDelta));
+      const result: LiquidityPredictionResult = {
+        ...baseResult,
+        predictedLiquidityIndex,
+      };
+
       this.currentResult = result;
       this.notifyListeners(result);
       return result;

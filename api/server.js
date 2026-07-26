@@ -6,6 +6,7 @@ import { oauthAuth } from './middleware/auth.js';
 import { router as accountsRouter } from './routes/accounts.js';
 import { router as transactionsRouter } from './routes/transactions.js';
 import liquidityRouter from './routes/liquidity.js';
+import liquidityPredictionRouter from './routes/liquidityPrediction.js';
 
 const app = express();
 const server = createServer(app);
@@ -18,6 +19,7 @@ app.use(rateLimiter);
 app.use('/api/v1/accounts', oauthAuth, accountsRouter);
 app.use('/api/v1/transactions', oauthAuth, transactionsRouter);
 app.use('/api/v1/liquidity', liquidityRouter);
+app.use('/api/v1', liquidityPredictionRouter);
 
 // Documentation endpoint
 app.get('/api/docs', (req, res) => {
