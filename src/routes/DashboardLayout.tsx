@@ -38,6 +38,7 @@ import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
 import DebugAssistantButton from '../components/debug/DebugAssistantButton';
 import DebugAssistantPanel from '../components/debug/DebugAssistantPanel';
+import TipButton from '../components/ai/TipButton';
 
 interface SearchResult {
   type?: string;
@@ -441,6 +442,7 @@ export default function DashboardLayout() {
           <DebugAssistantPanel onClose={() => toggleDebugAssistant()} />
         )}
         {isMobile && <MobileNavigation />}
+        <TipButton />
         {preferencesOpen && (
           <div
             style={{
