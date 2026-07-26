@@ -38,7 +38,7 @@ import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
 import DebugAssistantButton from '../components/debug/DebugAssistantButton';
 import DebugAssistantPanel from '../components/debug/DebugAssistantPanel';
-import TipButton from '../components/ai/TipButton';
+import PredictiveFeatureSuggestions from '../components/dashboard/PredictiveFeatureSuggestions';
 
 interface SearchResult {
   type?: string;
@@ -425,6 +425,9 @@ export default function DashboardLayout() {
         </main>
         <TourLauncher />
         <DevToolbar />
+        <PredictiveFeatureSuggestions
+          onNavigate={(tab) => navigate(`/${tab}`)}
+        />
         <NotificationBell
           onClick={() => setNotificationsOpen(true)}
           bottomOffset={isMobile ? 'calc(60px + 16px)' : '20px'}
