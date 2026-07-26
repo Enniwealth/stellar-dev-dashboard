@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { analyzeContractUpgrade } from './contract_upgrade_analysis/contractUpgradeAnalysis.js'
-import { loadModels, scoreTransaction } from './scoringEngine.js'
+import { scoreTransaction } from './scoringEngine.js'
 import { FederatedLearningIntegration } from './federated/integration.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -114,5 +114,5 @@ app.post('/federated-sync', async (req, res) => {
 
 const port = process.env.PORT || 4001
 app.listen(port, () => {
-  console.log('ML scoring server running on port', port)
+  console.info('ML scoring server running on port', port)
 })

@@ -919,7 +919,6 @@ export default function AdvancedSearch() {
         </div>
       )}
       {/* end keyword search bar */}
-      )}
 
       {/* Search Results */}
       {!semanticMode && searchResults && (
