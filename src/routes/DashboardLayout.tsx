@@ -36,6 +36,9 @@ import OfflineBanner from '../components/layout/OfflineBanner';
 import PWAInstallBanner from '../components/PWAInstallBanner';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
+import DebugAssistantButton from '../components/debug/DebugAssistantButton';
+import DebugAssistantPanel from '../components/debug/DebugAssistantPanel';
+import PredictiveFeatureSuggestions from '../components/dashboard/PredictiveFeatureSuggestions';
 
 interface SearchResult {
   type?: string;
@@ -55,6 +58,7 @@ const lazyNamedTab = (loader: () => Promise<Record<string, unknown>>, exportName
 
 const Overview = lazyTab(() => import('../components/dashboard/Overview'));
 const TransactionAnalytics = lazy(() => import('../components/dashboard/TransactionAnalyticsDashboard'));
+const RefactoringAdvisor = lazyTab(() => import('../components/dashboard/RefactoringAdvisor'));
 
 const TABS: Record<string, TabComponent> = {
   overview: Overview,
@@ -83,6 +87,7 @@ const TABS: Record<string, TabComponent> = {
   featureFlags: lazyTab(() => import('../components/dashboard/FeatureFlags')),
   systemHealth: lazyTab(() => import('../components/dashboard/SystemHealth')),
   performance: lazyTab(() => import('../components/dashboard/PerformanceMonitor')),
+  logAnalyzer: lazyTab(() => import('../components/dashboard/LogAnalyzer')),
   settings: lazyTab(() => import('../components/dashboard/Settings')),
   collaboration: lazyTab(() => import('../components/dashboard/CollaborationTab')),
   audit: lazyTab(() => import('../components/dashboard/AuditLog')),
@@ -99,6 +104,7 @@ const TABS: Record<string, TabComponent> = {
   security: lazyTab(() => import('../components/dashboard/SecurityDashboard')),
   throughputForecast: lazyTab(() => import('../components/dashboard/ThroughputForecast')),
   txAnalytics: TransactionAnalytics,
+  capacityPlanning: lazyTab(() => import('../components/dashboard/CapacityPredictionPanel')),
 };
 
 function TabLoadingFallback() {
@@ -226,6 +232,9 @@ export default function DashboardLayout() {
     setActiveTab,
     preferencesOpen,
     setPreferencesOpen,
+    debugAssistantOpen,
+    debugAssistantIssueCount,
+    toggleDebugAssistant,
   } = useStore();
   const { isMobile, isTablet } = useResponsive();
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
@@ -417,6 +426,9 @@ export default function DashboardLayout() {
         </main>
         <TourLauncher />
         <DevToolbar />
+        <PredictiveFeatureSuggestions
+          onNavigate={(tab) => navigate(`/${tab}`)}
+        />
         <NotificationBell
           onClick={() => setNotificationsOpen(true)}
           bottomOffset={isMobile ? 'calc(60px + 16px)' : '20px'}
@@ -425,7 +437,16 @@ export default function DashboardLayout() {
           open={notificationsOpen}
           onClose={() => setNotificationsOpen(false)}
         />
+        <DebugAssistantButton
+          onClick={() => toggleDebugAssistant()}
+          isOpen={debugAssistantOpen}
+          issueCount={debugAssistantIssueCount}
+        />
+        {debugAssistantOpen && (
+          <DebugAssistantPanel onClose={() => toggleDebugAssistant()} />
+        )}
         {isMobile && <MobileNavigation />}
+        <TipButton />
         {preferencesOpen && (
           <div
             style={{
