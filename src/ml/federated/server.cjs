@@ -1,9 +1,19 @@
 // Federated Learning Aggregation Server
 const express = require('express');
-const bodyParser = require('body-parser');
-const tf = require('@tensorflow/tfjs-node');
 const fs = require('fs');
 const path = require('path');
+let tf = null;
+function getTf() {
+  if (!tf) {
+    try {
+      tf = require('@tensorflow/tfjs-node');
+    } catch (err) {
+      console.warn('Optional tfjs-node dependency is unavailable:', err.message);
+      tf = null;
+    }
+  }
+  return tf;
+}
 
 class FederatedServer {
   constructor(config = {}) {
@@ -14,7 +24,7 @@ class FederatedServer {
     this.aggregationStrategy = config.aggregationStrategy || 'fedavg';
     
     this.app = express();
-    this.app.use(bodyParser.json({ limit: '50mb' }));
+    this.app.use(express.json({ limit: '50mb' }));
     
     this.currentRound = 0;
     this.globalModel = null;
@@ -63,8 +73,12 @@ class FederatedServer {
         }
         
         // Deserialize weights
+        const tfjs = getTf();
+        if (!tfjs) {
+          throw new Error('TensorFlow backend unavailable for federated server aggregation');
+        }
         const tensorWeights = weights.map(w => {
-          return tf.tensor(w.data, w.shape);
+          return tfjs.tensor(w.data, w.shape);
         });
         
         // Store update
@@ -165,8 +179,12 @@ class FederatedServer {
     const totalExamples = updates.reduce((sum, update) => sum + update.numExamples, 0);
     
     // Initialize aggregated weights with first update
+    const tfjs = getTf();
+    if (!tfjs) {
+      throw new Error('TensorFlow backend unavailable for federated server aggregation');
+    }
     const aggregatedWeights = updates[0].weights.map(tensor => 
-      tf.zerosLike(tensor).mul(updates[0].numExamples / totalExamples)
+      tfjs.zerosLike(tensor).mul(updates[0].numExamples / totalExamples)
     );
     
     // Weighted average of all updates
@@ -182,25 +200,29 @@ class FederatedServer {
     
     // Update or create global model
     if (!this.globalModel) {
-      this.globalModel = tf.sequential();
-      this.globalModel.add(tf.layers.dense({
+      const tfjs = getTf();
+      if (!tfjs) {
+        throw new Error('TensorFlow backend unavailable for federated server aggregation');
+      }
+      this.globalModel = tfjs.sequential();
+      this.globalModel.add(tfjs.layers.dense({
         units: 64,
         activation: 'relu',
         inputShape: [aggregatedWeights[0].shape[0]]
       }));
-      this.globalModel.add(tf.layers.dropout({ rate: 0.2 }));
-      this.globalModel.add(tf.layers.dense({
+      this.globalModel.add(tfjs.layers.dropout({ rate: 0.2 }));
+      this.globalModel.add(tfjs.layers.dense({
         units: 32,
         activation: 'relu'
       }));
-      this.globalModel.add(tf.layers.dropout({ rate: 0.1 }));
-      this.globalModel.add(tf.layers.dense({
+      this.globalModel.add(tfjs.layers.dropout({ rate: 0.1 }));
+      this.globalModel.add(tfjs.layers.dense({
         units: 2,
         activation: 'softmax'
       }));
       
       this.globalModel.compile({
-        optimizer: tf.train.adam(0.001),
+        optimizer: tfjs.train.adam(0.001),
         loss: 'categoricalCrossentropy',
         metrics: ['accuracy']
       });
@@ -252,7 +274,11 @@ class FederatedServer {
       const pathToLoad = modelPath || path.join(modelsDir, 'federated_model_latest', 'model.json');
       
       if (fs.existsSync(pathToLoad)) {
-        this.globalModel = await tf.loadLayersModel('file://' + pathToLoad);
+        const tfjs = getTf();
+        if (!tfjs) {
+          throw new Error('TensorFlow backend unavailable for federated server model loading');
+        }
+        this.globalModel = await tfjs.loadLayersModel('file://' + pathToLoad);
         console.log('Loaded existing model');
         return true;
       }
