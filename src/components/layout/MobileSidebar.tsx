@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "signer", label: "Signer", icon: "✎" },
   { id: "multisig", label: "Multisig", icon: "⊕" },
   { id: "portfolio", label: "Portfolio", icon: "◐" },
+  { id: "autonomousTrading", label: "Trading Agent", icon: "🤖" },
   { id: "charts", label: "Charts", icon: "▤" },
   { id: "designSystem", label: "Design System", icon: "◈" },
   { id: "featureFlags", label: "Flags", icon: "🚩" },
