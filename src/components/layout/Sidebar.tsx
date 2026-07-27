@@ -65,6 +65,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'portfolioAnalytics', label: 'Portfolio Analytics', icon: '📊' },
   { id: 'autonomousTrading', label: 'Trading Agent', icon: '🤖' },
   { id: 'charts', label: 'Charts', icon: '▤' },
+  { id: 'dataStorytelling', label: 'Data Stories', icon: '📖' },
   { id: 'analytics', label: 'Analytics', icon: '◍' },
   { id: 'designSystem', label: 'Design System', icon: '◈' },
   { id: 'featureFlags', label: 'Flags', icon: '🚩' },
