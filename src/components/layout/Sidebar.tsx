@@ -5,6 +5,10 @@ import CopyableValue from '../dashboard/CopyableValue';
 import { NETWORKS, updateCustomNetworkConfig, switchToCustomProfile, loadCustomNetworkProfiles } from '../../lib/stellar';
 import { getActiveProfile } from '../../lib/userPreferences';
 import { preloadTab } from '../../hooks/usePreload';
+import { useAdaptiveComponents } from '../../hooks/useAdaptiveComponents';
+import { useExpertiseTracking } from '../../hooks/useExpertiseTracking';
+import ExpertiseBadge from '../expertise/ExpertiseBadge';
+import ExpertiseProgressPanel from '../expertise/ExpertiseProgressPanel';
 
 const SESSION_API_KEY = 'stellar_custom_api_key';
 
@@ -29,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
 
   { type: 'header', label: 'NETWORK' },
   { id: 'network', label: 'Network Info', icon: '◎' },
+  { id: 'validatorPredictor', label: 'Validator AI', icon: '🛡️' },
   { id: 'realtime', label: 'Real-Time', icon: '◉' },
   { id: 'liveActivity', label: 'Live Activity', icon: '⚡' },
   { id: 'cacheStats', label: 'Cache Stats', icon: '⊞' },
@@ -43,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   
   { type: 'header', label: 'EXPLORE' },
   { id: 'dex', label: 'DEX', icon: '⇌' },
+  { id: 'liquidityPrediction', label: 'Liquidity AI', icon: '🧠' },
   { id: 'pathExplorer', label: 'Path Explorer', icon: '⇢' },
   { id: 'explorers', label: 'Explorer Links', icon: '⊞' },
   
@@ -57,22 +63,26 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'alertRules', label: 'Alerts', icon: '🔔' },
   { id: 'portfolio', label: 'Portfolio', icon: '◐' },
   { id: 'portfolioAnalytics', label: 'Portfolio Analytics', icon: '📊' },
+  { id: 'autonomousTrading', label: 'Trading Agent', icon: '🤖' },
   { id: 'charts', label: 'Charts', icon: '▤' },
   { id: 'analytics', label: 'Analytics', icon: '◍' },
   { id: 'designSystem', label: 'Design System', icon: '◈' },
   { id: 'featureFlags', label: 'Flags', icon: '🚩' },
+  { id: 'codeReview', label: 'Code Review', icon: '🔍' },
   { id: 'txPatterns', label: 'AI Patterns', icon: '🧠' },
   { id: 'capacityPlanning', label: 'Capacity AI', icon: '📈' },
-  { id: 'upgradeImpact', label: 'Upgrade Impact', icon: '🔬' },
+  { id: 'backupOptimizer', label: 'Backup AI', icon: '💾' },
   { id: 'systemHealth', label: 'Health', icon: '⚕' },
   { id: 'monitoringDashboards', label: 'Monitoring', icon: '📊' },
-  { id: 'logAnalyzer', label: 'Log Analyzer', icon: '📋' },
+  { id: 'throughputForecast', label: 'Forecast', icon: '📈' },
   { id: 'dataExport', label: 'Export', icon: '⬇' },
   { id: 'collaboration', label: 'Collaboration', icon: '◌' },
   { id: 'governance', label: 'Governance', icon: '🗳' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
   { id: 'audit', label: 'Audit', icon: '⊟' },
+  { id: 'personalization', label: 'AI Personalization', icon: '🧠' },
   { id: 'security', label: 'Security', icon: '🛡️' },
+  { id: 'errorRecovery', label: 'Recovery', icon: '🧠' },
 ];
 
 export interface SidebarProps {
@@ -99,6 +109,10 @@ export default function Sidebar({ isMobile = false }: SidebarProps) {
     isMobileMenuOpen,
     setMobileMenuOpen,
   } = useStore();
+
+  const { getAdaptation, sidebarAdaptation, isNovice, isExpert } = useAdaptiveComponents();
+  const { trackFeatureInteraction } = useExpertiseTracking({ enabled: true });
+  const [showExpertisePanel, setShowExpertisePanel] = useState(false);
 
   const [customProfiles, setCustomProfiles] = useState<CustomProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
@@ -396,7 +410,7 @@ export default function Sidebar({ isMobile = false }: SidebarProps) {
               return (
                 <li key={item.id} role="presentation">
                   <button
-                    onClick={() => !isDisabled && handleNavClick(item.id)}
+                    onClick={() => !isDisabled && item.id && handleNavClick(item.id)}
                     disabled={isDisabled}
                     className="touch-target"
                     aria-current={isActive ? 'page' : undefined}
