@@ -1,20 +1,22 @@
 import { Router, Request, Response } from 'express';
-import { predictLiquidityAndPrice, getModelMetrics } from '../../ml/liquidityPredictionModel';
 import { checkLiquidityAlertRules } from '../../lib/liquidityAlerts';
 import { cacheMiddleware } from '../middleware/predictCache';
+import { POPULAR_DEX_PAIRS, liquidityEngine } from '../../lib/liquidityEngine';
+import { getModelMetrics } from '../../ml/liquidityPredictionModel';
 
 const router = Router();
 
-// GET prediction for a specific trading pair
+// GET prediction for a specific trading pair (uses ML model via LiquidityEngine)
 router.get('/v1/liquidity/predict', cacheMiddleware, async (req: Request, res: Response) => {
   const pair = req.query.pair as string;
-  if (!pair) {
-    return res.status(400).json({ error: 'Missing required query parameter: pair' });
+  if (pair) {
+    const pairObj = POPULAR_DEX_PAIRS.find(p => p.id === pair);
+    if (pairObj) {
+      liquidityEngine.setActivePair(pairObj);
+    }
   }
   try {
-    // In a real implementation we would fetch the latest snapshot from a data feeder
-    const snapshot = await import(`../data/snapshots/${pair}.json`).then(m => m.default);
-    const prediction = predictLiquidityAndPrice(snapshot);
+    const prediction = await liquidityEngine.refreshPredictions();
     // Run alert rules and fire notifications if conditions are met
     checkLiquidityAlertRules(prediction);
     res.json(prediction);
@@ -24,7 +26,7 @@ router.get('/v1/liquidity/predict', cacheMiddleware, async (req: Request, res: R
   }
 });
 
-// GET model health & metrics
+// GET model health & metrics (deterministic metrics from model code)
 router.get('/v1/liquidity/metrics', async (_req: Request, res: Response) => {
   try {
     const metrics = getModelMetrics();

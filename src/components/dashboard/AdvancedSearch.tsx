@@ -781,7 +781,7 @@ export default function AdvancedSearch() {
             </div>
           </div>
         )}
-      </div>
+      
 
       {/* Search History */}
       {showHistory && (
@@ -917,9 +917,8 @@ export default function AdvancedSearch() {
             </div>
           </div>
         </div>
-      )}
+      
       {/* end keyword search bar */}
-      )}
 
       {/* Search Results */}
       {!semanticMode && searchResults && (

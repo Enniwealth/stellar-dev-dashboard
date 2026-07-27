@@ -19,10 +19,11 @@ export function cacheMiddleware(req: Request, res: Response, next: NextFunction)
 
   // Monkey-patch res.json to store the response in cache
   const originalJson = res.json.bind(res);
-  res.json = (body: any) => {
+  const patchedJson = (body: any): Response => {
     cache.set(key, { timestamp: now, data: body });
     return originalJson(body);
-  } as any;
+  };
+  (res.json as any) = patchedJson;
 
   next();
 }
