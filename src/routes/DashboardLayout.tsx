@@ -105,7 +105,7 @@ const TABS: Record<string, TabComponent> = {
   throughputForecast: lazyTab(() => import('../components/dashboard/ThroughputForecast')),
   txAnalytics: TransactionAnalytics,
   capacityPlanning: lazyTab(() => import('../components/dashboard/CapacityPredictionPanel')),
-  validatorPredictor: lazyTab(() => import('../components/dashboard/ValidatorPredictorPanel')),
+  personalization: lazyTab(() => import('../components/dashboard/PersonalizationPanel')),
 };
 
 function TabLoadingFallback() {
