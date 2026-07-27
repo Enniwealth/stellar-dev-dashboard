@@ -1,3 +1,5 @@
+closes #550
+
 # Stellar Dev Dashboard
 
 A real-time developer dashboard for the Stellar network with advanced features including AI-enhanced transaction fee prediction.

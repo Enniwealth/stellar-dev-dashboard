@@ -29,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
 
   { type: 'header', label: 'NETWORK' },
   { id: 'network', label: 'Network Info', icon: '◎' },
+  { id: 'validatorPredictor', label: 'Validator AI', icon: '🛡️' },
   { id: 'realtime', label: 'Real-Time', icon: '◉' },
   { id: 'liveActivity', label: 'Live Activity', icon: '⚡' },
   { id: 'cacheStats', label: 'Cache Stats', icon: '⊞' },
@@ -63,14 +64,16 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'featureFlags', label: 'Flags', icon: '🚩' },
   { id: 'txPatterns', label: 'AI Patterns', icon: '🧠' },
   { id: 'capacityPlanning', label: 'Capacity AI', icon: '📈' },
+  { id: 'backupOptimizer', label: 'Backup AI', icon: '💾' },
   { id: 'systemHealth', label: 'Health', icon: '⚕' },
   { id: 'monitoringDashboards', label: 'Monitoring', icon: '📊' },
-  { id: 'logAnalyzer', label: 'Log Analyzer', icon: '📋' },
+  { id: 'throughputForecast', label: 'Forecast', icon: '📈' },
   { id: 'dataExport', label: 'Export', icon: '⬇' },
   { id: 'collaboration', label: 'Collaboration', icon: '◌' },
   { id: 'governance', label: 'Governance', icon: '🗳' },
   { id: 'settings', label: 'Settings', icon: '⚙' },
   { id: 'audit', label: 'Audit', icon: '⊟' },
+  { id: 'personalization', label: 'AI Personalization', icon: '🧠' },
   { id: 'security', label: 'Security', icon: '🛡️' },
 ];
 

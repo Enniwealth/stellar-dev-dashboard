@@ -1,6 +1,6 @@
 // Privacy-Preserving Data Collection System
 const crypto = require('crypto');
-const { extractFeatures } = require('../feature_extraction');
+const { extractFeatures } = require('../feature_extraction.cjs');
 
 class PrivacyPreservingCollector {
   constructor(config = {}) {
