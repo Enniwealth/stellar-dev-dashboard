@@ -3,6 +3,7 @@ import { getStoredValue } from './storage'
 import { syncState, onStateChange } from '../utils/stateSync'
 import type { NetworkName, NetworkStats } from './stellar'
 import type { Horizon, SorobanRpc } from '@stellar/stellar-sdk'
+import { generateInsights, type AnalyticsSummary } from './analytics'
 import { applyCustomThemeToDOM, removeCustomThemeFromDOM, saveThemeVarsToStorage, clearThemeVarsFromStorage, type ThemeDefinition } from '../styles/themeTypes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -186,6 +187,11 @@ export interface StoreState {
   setContractLoading: (v: boolean) => void
   setContractError: (e: string | null) => void
 
+  // Analytics
+  analytics: AnalyticsSummary | null
+  isGeneratingInsights: boolean
+  generateDataInsights: () => void
+
   deploymentStatus: Record<string, unknown> | null
   setDeploymentStatus: (s: Record<string, unknown> | null) => void
 
@@ -277,11 +283,9 @@ export interface StoreState {
   sessionRecordingId: string | null
   setSessionRecordingActive: (active: boolean, id?: string | null) => void
 
-  // Debug Assistant (#AI)
-  debugAssistantOpen: boolean
-  debugAssistantIssueCount: number
-  toggleDebugAssistant: () => void
-  setDebugAssistantIssueCount: (count: number) => void
+  // Capacity planning
+  capacityPredictionHorizon: number
+  setCapacityPredictionHorizon: (days: number) => void
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -481,6 +485,14 @@ export const useStore = create<StoreState>((set) => ({
   setContractLoading: (v) => set({ contractLoading: v }),
   setContractError: (e) => set({ contractError: e }),
 
+  // Analytics
+  analytics: null,
+  isGeneratingInsights: false,
+  generateDataInsights: () => set((state) => {
+    const summary = generateInsights(state.transactions, state.operations)
+    return { analytics: summary, isGeneratingInsights: false }
+  }),
+
   deploymentStatus: null,
   setDeploymentStatus: (s) => set({ deploymentStatus: s }),
 
@@ -524,10 +536,14 @@ export const useStore = create<StoreState>((set) => ({
 
   comparisonSlots: [],
   addComparisonSlot: () => set((state) => ({
-    comparisonSlots: [...state.comparisonSlots, { key: '', data: null, loading: false, error: null }],
+    comparisonSlots: state.comparisonSlots.length >= 5
+      ? state.comparisonSlots
+      : [...state.comparisonSlots, { key: '', data: null, loading: false, error: null }],
   })),
   removeComparisonSlot: (index) => set((state) => ({
-    comparisonSlots: state.comparisonSlots.filter((_, i) => i !== index),
+    comparisonSlots: state.comparisonSlots.length <= 2
+      ? state.comparisonSlots
+      : state.comparisonSlots.filter((_, i) => i !== index),
   })),
   reorderComparisonSlots: (orderedSlots) => set({ comparisonSlots: orderedSlots }),
   setComparisonKey: (index, key) => set((state) => {
@@ -547,7 +563,7 @@ export const useStore = create<StoreState>((set) => ({
   }),
   setComparisonError: (index, error) => set((state) => {
     const next = [...state.comparisonSlots]
-    if (next[index]) next[index].error = error
+    if (next[index]) { next[index].error = error; next[index].data = null }
     return { comparisonSlots: next }
   }),
 
@@ -581,7 +597,11 @@ export const useStore = create<StoreState>((set) => ({
   streamLedgers: [],
   streamError: null,
   setStreamStatus: (status) => set({ streamStatus: status }),
-  addStreamLedger: (l) => set((state) => ({ streamLedgers: [l, ...state.streamLedgers].slice(0, 50) })),
+  addStreamLedger: (l) => set((state) => {
+    const exists = state.streamLedgers.some((s) => s.sequence === l.sequence)
+    if (exists) return {}
+    return { streamLedgers: [l, ...state.streamLedgers].slice(0, 50) }
+  }),
   clearStreamLedgers: () => set({ streamLedgers: [] }),
   setStreamError: (e) => set({ streamError: e }),
 
@@ -611,11 +631,9 @@ export const useStore = create<StoreState>((set) => ({
   sessionRecordingId: null,
   setSessionRecordingActive: (active, id = null) => set({ sessionRecordingActive: active, sessionRecordingId: id ?? null }),
 
-  // Debug Assistant (#AI)
-  debugAssistantOpen: false,
-  debugAssistantIssueCount: 0,
-  toggleDebugAssistant: () => set((state) => ({ debugAssistantOpen: !state.debugAssistantOpen })),
-  setDebugAssistantIssueCount: (count) => set({ debugAssistantIssueCount: count }),
+  // Capacity planning
+  capacityPredictionHorizon: 30,
+  setCapacityPredictionHorizon: (days) => set({ capacityPredictionHorizon: days }),
 }))
 
 // ─── Expose store for e2e testing ────────────────────────────────────────────
