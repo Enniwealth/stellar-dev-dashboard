@@ -106,8 +106,10 @@ const TABS: Record<string, TabComponent> = {
   devToolbar: lazyTab(() => import('../components/dashboard/DevToolbar')),
   compliance: lazyTab(() => import('../components/dashboard/ComplianceDashboard')),
   security: lazyTab(() => import('../components/dashboard/SecurityDashboard')),
+  throughputForecast: lazyTab(() => import('../components/dashboard/ThroughputForecast')),
   txAnalytics: TransactionAnalytics,
   capacityPlanning: lazyTab(() => import('../components/dashboard/CapacityPredictionPanel')),
+  autonomousTrading: lazyTab(() => import('../components/dashboard/AutonomousTradingAgent')),
 };
 
 function TabLoadingFallback() {
@@ -461,6 +463,9 @@ export default function DashboardLayout() {
         </main>
         <TourLauncher />
         <DevToolbar />
+        <PredictiveFeatureSuggestions
+          onNavigate={(tab) => navigate(`/${tab}`)}
+        />
         <NotificationBell
           onClick={() => setNotificationsOpen(true)}
           bottomOffset={isMobile ? 'calc(60px + 16px)' : '20px'}
@@ -478,6 +483,7 @@ export default function DashboardLayout() {
           <DebugAssistantPanel onClose={() => toggleDebugAssistant()} />
         )}
         {isMobile && <MobileNavigation />}
+        <TipButton />
         {preferencesOpen && (
           <div
             style={{

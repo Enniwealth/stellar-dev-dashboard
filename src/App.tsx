@@ -9,6 +9,7 @@ import { ExpertiseProvider } from './context/ExpertiseContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { DeveloperTools } from './components/DeveloperTools';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
+import { TipProvider } from './components/ai/TipProvider';
 
 const DashboardLayout = lazy(() => import('./routes/DashboardLayout'));
 
