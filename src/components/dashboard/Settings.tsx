@@ -8,7 +8,7 @@ import { saveAlertRule, getAlertRules, deleteAlertRule } from "../../lib/alertRu
 import { ALERT_RULE_TYPE, ALERT_CHANNEL } from "../../lib/alerts";
 import PluginRegistryView from "./PluginRegistryView";
 import DataExport from "./DataExport";
-import { useExpertise } from "../../context/ExpertiseContext";
+import LanguageSettings from "./LanguageSettings";
 
 const SESSION_API_KEY = 'stellar_custom_api_key';
 
@@ -131,7 +131,6 @@ export default function Settings() {
   const initialCustomHeaders = getCustomNetworkAuthHeaders();
   const initialHeaderName = Object.keys(initialCustomHeaders)[0] || "Authorization";
   const { network, setNetwork, theme, toggleTheme, setActiveTab } = useStore();
-  const { level, setLevel } = useExpertise();
   const {
     profiles,
     activeProfile,
@@ -206,6 +205,11 @@ export default function Settings() {
       >
         Settings
       </h2>
+
+      {/* ── Language & AI Translation ── */}
+      <div style={styles.section}>
+        <LanguageSettings />
+      </div>
 
       {updateReady && (
         <div style={{ ...styles.banner, ...styles.updateBanner } as React.CSSProperties}>
@@ -305,39 +309,6 @@ export default function Settings() {
             >
               Active
             </span>
-          </div>
-        </div>
-      </div>
-
-      <div style={styles.section}>
-        <p style={styles.sectionTitle}>Adaptive UI</p>
-        <div style={styles.card}>
-          <div style={styles.row}>
-            <div>
-              <p style={styles.label}>Manual expertise override</p>
-              <p style={styles.description}>
-                Switch the experience between simplified guidance and advanced builder controls.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {(['novice','intermediate','expert'] as const).map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setLevel(option)}
-                  style={{
-                    border: level === option ? '1px solid var(--cyan)' : '1px solid var(--border)',
-                    background: level === option ? 'rgba(6, 182, 212, 0.16)' : 'var(--bg-elevated)',
-                    color: 'var(--text-primary)',
-                    borderRadius: '999px',
-                    padding: '6px 10px',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>
