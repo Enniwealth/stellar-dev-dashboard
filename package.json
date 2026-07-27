@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "ml:train": "node src/ml/train.js",
+    "ml:train:phishing": "node src/ml/train_phishing.cjs",
     "ml:server": "node src/ml/server.js",
     "ml:build:train": "node src/ml/build_prediction/train.js",
     "ml:build:server": "node src/ml/build_prediction/server.js",
+    "ml:backup:train": "node src/ml/backup/train.js",
+    "ml:backup:server": "node src/ml/backup/server.js",
     "dev": "vite",
     "build": "vite build",
     "build:analyze": "ANALYZE=1 vite build",
@@ -51,7 +54,7 @@
     "express": "^4.18.2",
     "@axe-core/react": "^4.11.3",
     "@stellar/stellar-sdk": "^12.3.0",
-    "date-fns": "^3.6.0",
+    "@tensorflow/tfjs": "^4.22.0",
     "d3-array": "^3.2.4",
     "d3-force-3d": "^3.0.6",
     "d3-scale": "^4.0.2",
@@ -60,7 +63,6 @@
     "d3-shape": "^3.2.0",
     "d3-time-format": "^4.1.0",
     "d3-zoom": "^3.0.0",
-    "express": "^4.18.2",
     "i18next": "^23.15.1",
     "i18next-browser-languagedetector": "^8.0.0",
     "idb": "^8.0.3",
@@ -80,8 +82,7 @@
   "optionalDependencies": {
     "@ledgerhq/hw-transport-webhid": "^6.29.4",
     "@ledgerhq/hw-transport-webusb": "^6.29.4",
-    "@stellar/ledger": "^1.0.0",
-    "@tensorflow/tfjs-node": "4.22.0"
+    "@stellar/ledger": "^1.0.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.0",
@@ -118,7 +119,7 @@
     "prettier": "^3.3.3",
     "rollup-plugin-visualizer": "^5.12.0",
     "storybook": "^8.5.0",
-    "typescript": "^6.0.3",
+    "typescript": "^5.9.0",
     "vite": "^5.4.0",
     "vitest": "^2.1.9"
   },

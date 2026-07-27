@@ -1,13 +1,33 @@
-/**
- * RecoveryStrategyRegistry — stub
- * The full implementation is not included in this repo snapshot.
- * These no-ops prevent the build from breaking.
- */
+import { selfHealingManager, ServiceStatus, ServiceHealth } from './SelfHealingManager'
+
+export type HealthProbe = {
+  id: string
+  label: string
+  status: ServiceHealth
+  lastChecked: string | null
+  lastError?: string
+}
+
+const probes: HealthProbe[] = []
 
 export function registerBuiltInStrategies(): void {
-  // no-op stub
+  // Example recovery strategies could be registered here.
+  // For now, we keep the behavior minimal and let selfHealingManager manage service states.
 }
 
 export async function registerNetworkProbes(): Promise<void> {
-  // no-op stub
+  // Register the well-known services for network health.
+  const networkServices = ['horizon', 'soroban']
+  networkServices.forEach((id) => {
+    selfHealingManager.registerService(id, {
+      health: 'unknown',
+      lastSuccess: null,
+      lastFailure: null,
+      failureCount: 0,
+      recoveryAttempts: 0,
+    })
+  })
+  return Promise.resolve()
 }
+
+export { HealthProbe }

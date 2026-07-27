@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import {
-  NotificationDeduplicator,
-  // SmartNotification type removed (JSX file)
-} from '../../lib/notificationDeduplicator'
+import { NotificationDeduplicator } from '../../lib/notificationDeduplicator'
+import type { SmartNotification } from '../../lib/notificationDeduplicator'
 import {
   NOTIFICATION_CATEGORIES,
   PRIORITY_ORDER,
-
-
+  type NotificationCategory,
+  type NotificationPriority,
 } from '../../lib/notificationCategories'
 import {
   filterNotifications,
+  type NotificationFilterConfig,
+  type NotificationSortMode,
 } from '../../lib/notificationFilter'
 import {
   loadNotificationPreferences,
