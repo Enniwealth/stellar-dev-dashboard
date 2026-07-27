@@ -25,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "contracts", label: "Contracts", icon: "◻" },
   { id: "assets", label: "Assets", icon: "💎" },
   { id: "network", label: "Network", icon: "◎" },
+  { id: "validatorPredictor", label: "Validator AI", icon: "🛡️" },
   { id: "realtime", label: "Real-Time", icon: "◉" },
   { id: "builder", label: "Builder", icon: "⚒" },
   { id: "faucet", label: "Faucet", icon: "⬡" },
@@ -32,11 +33,14 @@ const NAV_ITEMS: NavItem[] = [
   { id: "signer", label: "Signer", icon: "✎" },
   { id: "multisig", label: "Multisig", icon: "⊕" },
   { id: "portfolio", label: "Portfolio", icon: "◐" },
+  { id: "autonomousTrading", label: "Trading Agent", icon: "🤖" },
   { id: "charts", label: "Charts", icon: "▤" },
   { id: "designSystem", label: "Design System", icon: "◈" },
   { id: "featureFlags", label: "Flags", icon: "🚩" },
   { id: "collaboration", label: "Collaboration", icon: "◌" },
   { id: "txPatterns", label: "AI Patterns", icon: "🧠" },
+  { id: "contractRecommendations", label: "Contract AI", icon: "💡" },
+  { id: "personalization", label: "AI Personalization", icon: "🧠" },
   { id: "security", label: "Security", icon: "🛡️" },
 ];
 

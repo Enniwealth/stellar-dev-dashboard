@@ -36,6 +36,9 @@ import OfflineBanner from '../components/layout/OfflineBanner';
 import PWAInstallBanner from '../components/PWAInstallBanner';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
+import DebugAssistantButton from '../components/debug/DebugAssistantButton';
+import DebugAssistantPanel from '../components/debug/DebugAssistantPanel';
+import ConversationPanel from '../components/conversation/ConversationPanel';
 
 interface SearchResult {
   type?: string;
@@ -55,6 +58,7 @@ const lazyNamedTab = (loader: () => Promise<Record<string, unknown>>, exportName
 
 const Overview = lazyTab(() => import('../components/dashboard/Overview'));
 const TransactionAnalytics = lazy(() => import('../components/dashboard/TransactionAnalyticsDashboard'));
+const RefactoringAdvisor = lazyTab(() => import('../components/dashboard/RefactoringAdvisor'));
 
 const TABS: Record<string, TabComponent> = {
   overview: Overview,
@@ -83,6 +87,7 @@ const TABS: Record<string, TabComponent> = {
   featureFlags: lazyTab(() => import('../components/dashboard/FeatureFlags')),
   systemHealth: lazyTab(() => import('../components/dashboard/SystemHealth')),
   performance: lazyTab(() => import('../components/dashboard/PerformanceMonitor')),
+  logAnalyzer: lazyTab(() => import('../components/dashboard/LogAnalyzer')),
   settings: lazyTab(() => import('../components/dashboard/Settings')),
   collaboration: lazyTab(() => import('../components/dashboard/CollaborationTab')),
   audit: lazyTab(() => import('../components/dashboard/AuditLog')),
@@ -97,7 +102,10 @@ const TABS: Record<string, TabComponent> = {
   devToolbar: lazyTab(() => import('../components/dashboard/DevToolbar')),
   compliance: lazyTab(() => import('../components/dashboard/ComplianceDashboard')),
   security: lazyTab(() => import('../components/dashboard/SecurityDashboard')),
+  throughputForecast: lazyTab(() => import('../components/dashboard/ThroughputForecast')),
   txAnalytics: TransactionAnalytics,
+  capacityPlanning: lazyTab(() => import('../components/dashboard/CapacityPredictionPanel')),
+  codeReview: lazyTab(() => import('../components/dashboard/CodeReviewAssistant')),
 };
 
 function TabLoadingFallback() {
@@ -225,9 +233,14 @@ export default function DashboardLayout() {
     setActiveTab,
     preferencesOpen,
     setPreferencesOpen,
+    debugAssistantOpen,
+    debugAssistantIssueCount,
+    toggleDebugAssistant,
   } = useStore();
   const { isMobile, isTablet } = useResponsive();
+  const { level, isNovice, setLevel, updateSignals } = useExpertise();
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
+  const [conversationOpen, setConversationOpen] = useState<boolean>(false);
 
   useEffect(() => {
     // v2: full multi-layer cache initialization (warm, prune, SW bridge)
@@ -240,6 +253,18 @@ export default function DashboardLayout() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-expertise', level);
+  }, [level]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      updateSignals((current) => ({ sessionDurationMinutes: current.sessionDurationMinutes + 1 }));
+    }, 60000);
+
+    return () => window.clearInterval(timer);
+  }, [updateSignals]);
 
   useEffect(() => {
     initializeErrorReporting({
@@ -379,8 +404,18 @@ export default function DashboardLayout() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <NetworkIndicator />
             </div>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <ExpertiseBadge
+                onLevelChange={() => {
+                  trackFeatureInteraction('expertise-badge');
+                }}
+              />
+            </div>
             <button
-              onClick={() => setPreferencesOpen(true)}
+              onClick={() => {
+                setPreferencesOpen(true);
+                trackFeatureInteraction('preferences');
+              }}
               title="User Preferences"
               style={{
                 width: '36px',
@@ -416,6 +451,9 @@ export default function DashboardLayout() {
         </main>
         <TourLauncher />
         <DevToolbar />
+        <PredictiveFeatureSuggestions
+          onNavigate={(tab) => navigate(`/${tab}`)}
+        />
         <NotificationBell
           onClick={() => setNotificationsOpen(true)}
           bottomOffset={isMobile ? 'calc(60px + 16px)' : '20px'}
@@ -424,7 +462,64 @@ export default function DashboardLayout() {
           open={notificationsOpen}
           onClose={() => setNotificationsOpen(false)}
         />
+        <DebugAssistantButton
+          onClick={() => toggleDebugAssistant()}
+          isOpen={debugAssistantOpen}
+          issueCount={debugAssistantIssueCount}
+        />
+        {debugAssistantOpen && (
+          <DebugAssistantPanel onClose={() => toggleDebugAssistant()} />
+        )}
+
+        {/* Conversational Navigation Button */}
+        <button
+          type="button"
+          onClick={() => setConversationOpen(!conversationOpen)}
+          aria-label={conversationOpen ? 'Close navigation assistant' : 'Open navigation assistant'}
+          style={{
+            position: 'fixed',
+            right: '20px',
+            bottom: isMobile ? 'calc(60px + 78px)' : '78px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            border: `2px solid ${conversationOpen ? 'var(--cyan)' : 'var(--border)'}`,
+            background: conversationOpen ? 'var(--cyan-glow)' : 'var(--bg-card)',
+            color: conversationOpen ? 'var(--cyan)' : 'var(--text-primary)',
+            cursor: 'pointer',
+            boxShadow: conversationOpen
+              ? '0 0 20px var(--cyan-glow)'
+              : '0 6px 18px rgba(0, 0, 0, 0.25)',
+            zIndex: 1061,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            transition: 'all 180ms ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!conversationOpen) {
+              e.currentTarget.style.borderColor = 'var(--cyan-dim)';
+              e.currentTarget.style.boxShadow = '0 0 12px var(--cyan-glow)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!conversationOpen) {
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.boxShadow = '0 6px 18px rgba(0, 0, 0, 0.25)';
+            }
+          }}
+        >
+          <span aria-hidden="true">{conversationOpen ? '✕' : '💬'}</span>
+        </button>
+
+        <ConversationPanel
+          isOpen={conversationOpen}
+          onClose={() => setConversationOpen(false)}
+        />
+
         {isMobile && <MobileNavigation />}
+        <TipButton />
         {preferencesOpen && (
           <div
             style={{
