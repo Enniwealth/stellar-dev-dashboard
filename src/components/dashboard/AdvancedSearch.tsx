@@ -918,7 +918,7 @@ export default function AdvancedSearch() {
             </div>
           </div>
         </div>
-      
+      )}
       {/* end keyword search bar */}
 
       {/* Search Results */}
