@@ -27,6 +27,9 @@ import type {
   WatchedAccount,
 } from '../types/accountWatch'
 
+import { AnomalyDetectionPipeline } from './anomalyDetectionPipeline';
+export const anomalyPipeline = new AnomalyDetectionPipeline();
+
 const STORAGE_KEY = 'stellar:account-watch:v1'
 /** Max concurrent Horizon requests during a refresh — keeps 100+ accounts safe. */
 const DEFAULT_CONCURRENCY = 8
