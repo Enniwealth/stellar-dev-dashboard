@@ -81,6 +81,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'audit', label: 'Audit', icon: '⊟' },
   { id: 'personalization', label: 'AI Personalization', icon: '🧠' },
   { id: 'security', label: 'Security', icon: '🛡️' },
+  { id: 'errorRecovery', label: 'Recovery', icon: '🧠' },
 ];
 
 export interface SidebarProps {
@@ -408,7 +409,7 @@ export default function Sidebar({ isMobile = false }: SidebarProps) {
               return (
                 <li key={item.id} role="presentation">
                   <button
-                    onClick={() => !isDisabled && handleNavClick(item.id)}
+                    onClick={() => !isDisabled && item.id && handleNavClick(item.id)}
                     disabled={isDisabled}
                     className="touch-target"
                     aria-current={isActive ? 'page' : undefined}
