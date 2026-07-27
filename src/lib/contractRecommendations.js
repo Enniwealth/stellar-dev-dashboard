@@ -1,6 +1,10 @@
 const STORAGE_KEY = 'stellar:dashboard:recommendation-data'
 const HISTORY_KEY = 'stellar:dashboard:contract-interactions'
 
+import { ContractSecurityAnalyzer } from './contractSecurityAnalyzer.ts';
+
+// Instantiate the contract security analyzer for integrating with the contract inspector
+export const securityAnalyzer = new ContractSecurityAnalyzer();
 function cosineSimilarity(vecA, vecB) {
   let dot = 0, normA = 0, normB = 0
   for (const key in vecA) {
