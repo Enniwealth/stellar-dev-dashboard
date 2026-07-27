@@ -4,6 +4,11 @@
  * to compute advanced diagnostics, congestion load, fee predictions, and validator performance.
  */
 
+import { NetworkOptimizer } from './networkOptimizer.ts';
+
+// Instantiate the global network optimizer
+export const networkOptimizer = new NetworkOptimizer();
+
 // Curated list of prominent Stellar validators with base configuration
 export const PRIMARY_VALIDATORS = [
   { id: '1', name: 'SDF Validator 1', operator: 'Stellar Development Foundation', country: 'US', region: 'Iowa', basePing: 34, votingPower: 4.8 },
