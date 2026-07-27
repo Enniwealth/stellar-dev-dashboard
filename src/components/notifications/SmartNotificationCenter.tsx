@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import {
-  NotificationDeduplicator,
-  type SmartNotification,
-} from '../../lib/notificationDeduplicator'
+import { NotificationDeduplicator } from '../../lib/notificationDeduplicator'
+import type { SmartNotification } from '../../lib/notificationDeduplicator'
 import {
   NOTIFICATION_CATEGORIES,
   PRIORITY_ORDER,
@@ -401,11 +399,7 @@ function SmartNotificationCard({
 
 // ─── Filter chip ──────────────────────────────────────────────────────────────
 
-function FilterChip({ active, onClick, children }: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
+function FilterChip({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
@@ -431,10 +425,7 @@ function FilterChip({ active, onClick, children }: {
 
 // ─── Badge ────────────────────────────────────────────────────────────────────
 
-function Badge({ color, children }: {
-  color: string
-  children: React.ReactNode
-}) {
+function Badge({ color, children }) {
   return (
     <span style={{
       padding: '1px 5px',

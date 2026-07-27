@@ -254,7 +254,8 @@ export function initMonitoring(userConfig: Partial<MonitoringConfig> = {}): void
 
   logger.info('Monitoring stack initialised', { env: cfg.environment });
 }
-
+// Re-export lightweight runtime helpers for useMonitoring.js and other consumers.
+export { collectHealthSnapshot, collectSystemHealthSnapshot, computeHealthScore, watchErrors } from './monitoring.js'
 // ─── Sentry user context helpers ─────────────────────────────────────────────
 
 /**
