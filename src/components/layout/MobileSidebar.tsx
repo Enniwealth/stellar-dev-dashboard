@@ -43,7 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "contractRecommendations", label: "Contract AI", icon: "💡" },
   { id: "personalization", label: "AI Personalization", icon: "🧠" },
   { id: "security", label: "Security", icon: "🛡️" },
-  { id: "errorRecovery", label: "Recovery", icon: "🧠" },
+  { id: "dependencyManagement", label: "Dependencies", icon: "📦" },
 ];
 
 /**

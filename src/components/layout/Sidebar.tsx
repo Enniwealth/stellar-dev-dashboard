@@ -84,7 +84,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'audit', label: 'Audit', icon: '⊟' },
   { id: 'personalization', label: 'AI Personalization', icon: '🧠' },
   { id: 'security', label: 'Security', icon: '🛡️' },
-  { id: 'errorRecovery', label: 'Recovery', icon: '🧠' },
+  { id: 'dependencyManagement', label: 'Dependencies', icon: '📦' },
 ];
 
 export interface SidebarProps {
