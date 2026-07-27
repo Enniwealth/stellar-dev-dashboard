@@ -1,4 +1,5 @@
 import { OPERATION_LABELS } from './stellar'
+import { priorityScoringService } from './priorityScoring'
 
 // ─── Operators ─────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,21 @@ function safeStr(v) {
 // ─── Transaction filter definitions ────────────────────────────────────────────
 
 registry.registerMany([
+  {
+    key: 'tx.priority',
+    label: 'Priority Level',
+    shortLabel: 'Priority',
+    scope: 'transaction',
+    type: 'select',
+    operators: ['eq', 'neq'],
+    defaultOperator: 'eq',
+    options: [
+      { value: 'Low', label: 'Low' },
+      { value: 'Medium', label: 'Medium' },
+      { value: 'High', label: 'High' },
+    ],
+    extract: (tx) => priorityScoringService.scoreTransaction(tx).level,
+  },
   {
     key: 'tx.hash',
     label: 'Transaction Hash',
