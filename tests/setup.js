@@ -51,3 +51,34 @@ vi.mock('@stellar/stellar-sdk', async () => {
 
 // ─── Suppress noisy console output in tests ───────────────────────────────────
 global.console.warn = vi.fn();
+
+// ─── Stub HTMLCanvasElement.getContext for environments without canvas package
+try {
+  if (typeof HTMLCanvasElement !== 'undefined' && !HTMLCanvasElement.prototype.getContext) {
+    // @ts-ignore
+    HTMLCanvasElement.prototype.getContext = function () {
+      return {
+        getContextAttributes: () => ({}),
+        getExtension: () => null,
+        canvas: this,
+        // minimal 2D context stubs used by some libs
+        fillRect: () => {},
+        clearRect: () => {},
+        getImageData: () => ({ data: [] }),
+        putImageData: () => {},
+        createImageData: () => [],
+        setTransform: () => {},
+        drawImage: () => {},
+        save: () => {},
+        restore: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        closePath: () => {},
+        stroke: () => {},
+      };
+    };
+  }
+} catch (e) {
+  // ignore
+}

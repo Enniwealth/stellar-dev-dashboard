@@ -1,6 +1,18 @@
 // Federated Learning Client - Local model training with privacy preservation
-const tf = require('@tensorflow/tfjs-node');
-const { extractFeatures } = require('../feature_extraction');
+let tf = null;
+function getTf() {
+  if (!tf) {
+    try {
+      tf = require('@tensorflow/tfjs-node');
+    } catch (err) {
+      console.warn('Optional tfjs-node dependency is unavailable:', err.message);
+      tf = null;
+    }
+  }
+  return tf;
+}
+
+const { extractFeatures } = require('../feature_extraction.cjs');
 const crypto = require('crypto');
 
 class FederatedClient {
@@ -17,25 +29,29 @@ class FederatedClient {
 
   // Initialize local model architecture
   initializeModel(inputShape) {
-    this.model = tf.sequential();
-    this.model.add(tf.layers.dense({
+    const tfjs = getTf();
+    if (!tfjs) {
+      throw new Error('TensorFlow backend unavailable for federated client training');
+    }
+    this.model = tfjs.sequential();
+    this.model.add(tfjs.layers.dense({
       units: 64,
       activation: 'relu',
       inputShape: [inputShape]
     }));
-    this.model.add(tf.layers.dropout({ rate: 0.2 }));
-    this.model.add(tf.layers.dense({
+    this.model.add(tfjs.layers.dropout({ rate: 0.2 }));
+    this.model.add(tfjs.layers.dense({
       units: 32,
       activation: 'relu'
     }));
-    this.model.add(tf.layers.dropout({ rate: 0.1 }));
-    this.model.add(tf.layers.dense({
+    this.model.add(tfjs.layers.dropout({ rate: 0.1 }));
+    this.model.add(tfjs.layers.dense({
       units: 2,
       activation: 'softmax'
     }));
 
     this.model.compile({
-      optimizer: tf.train.adam(this.learningRate),
+      optimizer: tfjs.train.adam(this.learningRate),
       loss: 'categoricalCrossentropy',
       metrics: ['accuracy']
     });
@@ -76,13 +92,17 @@ class FederatedClient {
       this.initializeModel(featureDim);
     }
 
-    const xs = tf.tensor2d(data);
-    const ys = tf.tensor2d(labels);
+    const tfjs = getTf();
+    if (!tfjs) {
+      throw new Error('TensorFlow backend unavailable for federated client training');
+    }
+    const xs = tfjs.tensor2d(data);
+    const ys = tfjs.tensor2d(labels);
 
     // Apply differential privacy noise to gradients
     const originalGradients = [];
     this.model.compile({
-      optimizer: tf.train.adam(this.learningRate),
+      optimizer: tfjs.train.adam(this.learningRate),
       loss: 'categoricalCrossentropy',
       metrics: ['accuracy']
     });
@@ -128,7 +148,11 @@ class FederatedClient {
         noisyValues[i] = values[i] + noise;
       }
       
-      return tf.tensor(noisyValues, tensor.shape);
+      const tfjs = getTf();
+      if (!tfjs) {
+        throw new Error('TensorFlow backend unavailable for federated client privacy noise');
+      }
+      return tfjs.tensor(noisyValues, tensor.shape);
     });
   }
 

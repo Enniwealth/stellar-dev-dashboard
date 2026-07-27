@@ -38,6 +38,7 @@ import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
 import DebugAssistantButton from '../components/debug/DebugAssistantButton';
 import DebugAssistantPanel from '../components/debug/DebugAssistantPanel';
+import PredictiveFeatureSuggestions from '../components/dashboard/PredictiveFeatureSuggestions';
 
 interface SearchResult {
   type?: string;
@@ -101,6 +102,7 @@ const TABS: Record<string, TabComponent> = {
   devToolbar: lazyTab(() => import('../components/dashboard/DevToolbar')),
   compliance: lazyTab(() => import('../components/dashboard/ComplianceDashboard')),
   security: lazyTab(() => import('../components/dashboard/SecurityDashboard')),
+  throughputForecast: lazyTab(() => import('../components/dashboard/ThroughputForecast')),
   txAnalytics: TransactionAnalytics,
   capacityPlanning: lazyTab(() => import('../components/dashboard/CapacityPredictionPanel')),
   autonomousTrading: lazyTab(() => import('../components/dashboard/AutonomousTradingAgent')),
@@ -425,6 +427,9 @@ export default function DashboardLayout() {
         </main>
         <TourLauncher />
         <DevToolbar />
+        <PredictiveFeatureSuggestions
+          onNavigate={(tab) => navigate(`/${tab}`)}
+        />
         <NotificationBell
           onClick={() => setNotificationsOpen(true)}
           bottomOffset={isMobile ? 'calc(60px + 16px)' : '20px'}
@@ -442,6 +447,7 @@ export default function DashboardLayout() {
           <DebugAssistantPanel onClose={() => toggleDebugAssistant()} />
         )}
         {isMobile && <MobileNavigation />}
+        <TipButton />
         {preferencesOpen && (
           <div
             style={{
