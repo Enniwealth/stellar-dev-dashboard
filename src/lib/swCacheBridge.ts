@@ -1,65 +1,67 @@
-/**
- * swCacheBridge.ts
- * Thin bridge to the Service Worker's API cache bucket.
- * In environments where no SW is registered (tests, SSR) all operations
- * are no-ops so the rest of the cache stack degrades gracefully.
- */
+type SWMessageHandler = (data: any) => void
 
-export interface SWStats {
-  cacheSize: number
+type SWStats = {
+  hits: number
+  misses: number
   entries: number
-  hitRate: number
+  bytes: number
 }
 
-function hasSW(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    navigator.serviceWorker.controller !== null
-  )
+const listeners: Map<string, SWMessageHandler[]> = new Map()
+
+export function onSWMessage(type: string, handler: SWMessageHandler): void {
+  if (!('serviceWorker' in navigator)) return
+
+  const handlers = listeners.get(type) ?? []
+  handlers.push(handler)
+  listeners.set(type, handlers)
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    const message = event.data
+    if (!message || message.type !== type) return
+    handlers.forEach((cb) => cb(message.payload))
+  })
 }
 
-/**
- * Instruct the SW to cache the response for `url`.
- * No-ops when no SW is active.
- */
-export async function swCachePut(url: string, _data?: unknown): Promise<void> {
-  if (!hasSW()) return
-  try {
-    navigator.serviceWorker.controller!.postMessage({ type: 'SW_CACHE_PUT', url })
-  } catch {
-    // SW messaging failure is non-fatal
-  }
+function postToSW(message: any): void {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return
+  navigator.serviceWorker.controller.postMessage(message)
 }
 
-/**
- * Instruct the SW to delete the cached response for `url`.
- */
-export async function swCacheDelete(url: string): Promise<void> {
-  if (!hasSW()) return
-  try {
-    navigator.serviceWorker.controller!.postMessage({ type: 'SW_CACHE_DELETE', url })
-  } catch {
-    // non-fatal
-  }
+export function swWarmUrls(urls: string[]): void {
+  postToSW({ type: 'SWARM_URLS', payload: { urls } })
 }
 
-/**
- * Instruct the SW to clear all entries in the API cache bucket.
- */
-export async function swCacheClearApi(): Promise<void> {
-  if (!hasSW()) return
-  try {
-    navigator.serviceWorker.controller!.postMessage({ type: 'SW_CACHE_CLEAR_API' })
-  } catch {
-    // non-fatal
-  }
+export function swCachePut(url: string, value: unknown, ttl: number): void {
+  postToSW({ type: 'SW_CACHE_PUT', payload: { url, value, ttl } })
 }
 
-/**
- * Request cache statistics from the SW.
- * Returns zeroed stats when no SW is active.
- */
-export async function swGetStats(): Promise<SWStats> {
-  return { cacheSize: 0, entries: 0, hitRate: 0 }
+export function swCacheDelete(url: string): void {
+  postToSW({ type: 'SW_CACHE_DELETE', payload: { url } })
 }
+
+export function swCacheClearApi(): void {
+  postToSW({ type: 'SW_CACHE_CLEAR_API' })
+}
+
+export async function swGetStats(timeout = 500): Promise<SWStats | null> {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return null
+  return new Promise<SWStats | null>((resolve) => {
+    const id = `sw-stats-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const listener = (payload: any) => {
+      if (payload?.id !== id) return
+      resolve(payload.stats ?? null)
+    }
+
+    const handler = (event: any) => listener(event)
+    navigator.serviceWorker.addEventListener('message', handler)
+    navigator.serviceWorker.controller.postMessage({ type: 'SW_GET_STATS', payload: { id } })
+
+    setTimeout(() => {
+      navigator.serviceWorker.removeEventListener('message', handler)
+      resolve(null)
+    }, timeout)
+  })
+}
+
+export type { SWStats }
