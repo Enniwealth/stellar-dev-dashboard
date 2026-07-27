@@ -187,6 +187,16 @@ export default function UserPreferences({ onClose }) {
               />
             </PreferenceRow>
 
+            <PreferenceRow label="Contract Assistant">
+              <Toggle
+                checked={preferences.advanced?.enableContractAssistant ?? true}
+                onChange={(v) => handleChange('advanced', {
+                  ...preferences.advanced,
+                  enableContractAssistant: v,
+                })}
+              />
+            </PreferenceRow>
+
             <PreferenceRow label="Auto Refresh">
               <Toggle
                 checked={preferences.autoRefresh}
