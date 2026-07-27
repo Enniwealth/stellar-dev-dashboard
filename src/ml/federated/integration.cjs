@@ -1,12 +1,19 @@
 // Federated Learning Integration with Existing ML Infrastructure
-const { FederatedClient } = require('./client');
-const { FederatedServer } = require('./server');
-const { PrivacyPreservingCollector } = require('./privacy');
-const { scoreTransaction, loadModels } = require('../scoringEngine');
-const { IsolationForest } = require('../isolation_forest');
-const tf = require('@tensorflow/tfjs-node');
+const { FederatedClient } = require('./client.cjs');
+const { FederatedServer } = require('./server.cjs');
+const { PrivacyPreservingCollector } = require('./privacy.cjs');
+const { scoreTransaction, loadModels } = require('../scoringEngine.cjs');
+const { IsolationForest } = require('../isolation_forest.cjs');
 const fs = require('fs');
 const path = require('path');
+
+let tf = null;
+function getTf() {
+  if (!tf) {
+    tf = require('@tensorflow/tfjs-node');
+  }
+  return tf;
+}
 
 class FederatedLearningIntegration {
   constructor(config = {}) {
@@ -56,8 +63,9 @@ class FederatedLearningIntegration {
     if (this.isInitialized && this.federatedClient.model) {
       try {
         const features = this.privacyCollector.privatizeTransaction(tx).features;
+        const tfjs = getTf();
         const prediction = await this.federatedClient.model.predict(
-          tf.tensor2d([features])
+          tfjs.tensor2d([features])
         );
         const result = await prediction.array();
         federatedScore = result[0][1]; // Probability of fraud
@@ -210,7 +218,12 @@ class FederatedLearningIntegration {
       return privatized.features;
     });
 
-    const xs = tf.tensor2d(features);
+    const tfjs = getTf();
+    if (!tfjs) {
+      throw new Error('TensorFlow backend unavailable for evaluation');
+    }
+
+    const xs = tfjs.tensor2d(features);
     const predictions = await this.federatedClient.model.predict(xs);
     const predArray = await predictions.array();
 
