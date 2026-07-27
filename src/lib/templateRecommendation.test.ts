@@ -67,7 +67,7 @@ describe('templateRecommendation — accuracy (Issue #563)', () => {
       else misses.push(`"${c.desc}" -> ${top?.id ?? 'none'} (want ${c.expect})`);
     }
     const accuracy = correct / CASES.length;
-    if (accuracy < 0.85) console.log(`Accuracy ${(accuracy * 100).toFixed(1)}%\n${misses.join('\n')}`);
+    if (accuracy < 0.85) console.info(`Accuracy ${(accuracy * 100).toFixed(1)}%\n${misses.join('\n')}`);
     expect(accuracy).toBeGreaterThanOrEqual(0.85);
   });
 
