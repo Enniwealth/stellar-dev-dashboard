@@ -25,13 +25,6 @@ import {
 import { initPerformanceMonitoring } from '../lib/performance';
 import { createLogger } from './logger';
 
-export {
-  collectHealthSnapshot,
-  collectSystemHealthSnapshot,
-  computeHealthScore,
-  watchErrors,
-} from './monitoring.js';
-
 const logger = createLogger('Monitoring');
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -261,8 +254,6 @@ export function initMonitoring(userConfig: Partial<MonitoringConfig> = {}): void
 
   logger.info('Monitoring stack initialised', { env: cfg.environment });
 }
-// Re-export lightweight runtime helpers for useMonitoring.js and other consumers.
-export { collectHealthSnapshot, collectSystemHealthSnapshot, computeHealthScore, watchErrors } from './monitoring.js'
 // ─── Sentry user context helpers ─────────────────────────────────────────────
 
 /**
@@ -405,20 +396,3 @@ export default {
   captureError,
   SentryErrorBoundary,
 };
-
-// ─── Stubs for hooks/useMonitoring.js compatibility ──────────────────────────
-export function collectHealthSnapshot() {
-  return { cpu: 0, memory: 0, latency: 0, errors: 0, timestamp: Date.now() }
-}
-
-export function collectSystemHealthSnapshot() {
-  return collectHealthSnapshot()
-}
-
-export function computeHealthScore(_snapshot: ReturnType<typeof collectHealthSnapshot>): number {
-  return 100
-}
-
-export function watchErrors(_handler: (err: unknown) => void): () => void {
-  return () => { /* no-op */ }
-}

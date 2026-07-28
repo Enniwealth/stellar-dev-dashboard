@@ -7,12 +7,12 @@
 
 import { useReducer, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore } from '../../lib/store';
+import { useStore } from '../lib/store';
 import {
   classifyNavigationIntent,
   type NavIntentType,
   type NavigationIntent,
-} from '../../lib/navigationClassifier';
+} from '../lib/navigationClassifier';
 import {
   conversationReducer,
   initialState,
@@ -24,7 +24,7 @@ import {
   getVoiceGreeting,
   getCommandHelpText,
   type Message,
-} from '../../lib/conversationStore';
+} from '../lib/conversationStore';
 
 export function useConversationNavigation() {
   const [state, dispatch] = useReducer(conversationReducer, initialState);
