@@ -126,7 +126,16 @@ self.addEventListener('install', (event) => {
     caches
       .open(SHELL_CACHE)
       .then((cache) => cache.addAll(SHELL_ASSETS))
-      .then(() => self.skipWaiting()),
+      // Do NOT self.skipWaiting() here — let the client control activation
+      // via the SKIP_WAITING message so users can choose when to update.
+      .then(() => {
+        // Notify all clients that a new SW version is installed and waiting
+        self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({ type: 'SW_INSTALLED' });
+          });
+        });
+      }),
   );
 });
 

@@ -34,6 +34,7 @@ import KeyboardNavigation from '../components/accessibility/KeyboardNavigation';
 import ThemeToggle from '../components/layout/ThemeToggle';
 import OfflineBanner from '../components/layout/OfflineBanner';
 import PWAInstallBanner from '../components/PWAInstallBanner';
+import SWUpdatePrompt from '../components/SWUpdatePrompt';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
 import DebugAssistantButton from '../components/debug/DebugAssistantButton';
@@ -384,6 +385,7 @@ export default function DashboardLayout() {
     <ErrorBoundary onRetry={handleRetry} maxRetries={3}>
       <OfflineBanner />
       <PWAInstallBanner />
+      <SWUpdatePrompt />
       <div
         style={{
           display: 'flex',
