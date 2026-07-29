@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { analyzeDependencies } from '../../lib/dependencyManagement';
+import PredictiveVulnerabilityScanner from './PredictiveVulnerabilityScanner';
 import {
   SAMPLE_AUDIT,
   SAMPLE_LOCK_PACKAGES,
@@ -695,6 +696,7 @@ const STEPS = [
   { id: 'deps', label: 'Dependency Scanning', icon: '📦', shortLabel: 'Dependencies' },
   { id: 'sast', label: 'SAST', icon: '🔎', shortLabel: 'SAST' },
   { id: 'dast', label: 'DAST', icon: '⚡', shortLabel: 'DAST' },
+  { id: 'predictive', label: 'Predictive Scanning', icon: '🧠', shortLabel: 'Predictive' },
   { id: 'scorecard', label: 'Scorecard', icon: '📊', shortLabel: 'Scorecard' },
 ] as const;
 
@@ -754,6 +756,7 @@ export default function SecurityDashboard() {
         {activeStep === 'deps' && <DependencyScanning />}
         {activeStep === 'sast' && <SAST />}
         {activeStep === 'dast' && <DAST />}
+        {activeStep === 'predictive' && <PredictiveVulnerabilityScanner />}
         {activeStep === 'scorecard' && <Scorecard />}
       </div>
 

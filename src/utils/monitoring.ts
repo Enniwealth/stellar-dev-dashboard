@@ -26,13 +26,6 @@ import { initPerformanceMonitoring } from '../lib/performance';
 import { createLogger } from './logger';
 import { loadPreferences } from './preferences';
 
-export {
-  collectHealthSnapshot,
-  collectSystemHealthSnapshot,
-  computeHealthScore,
-  watchErrors,
-} from './monitoring.js';
-
 const logger = createLogger('Monitoring');
 
 // ─── Config ───────────────────────────────────────────────────────────────────
