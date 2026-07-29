@@ -24,6 +24,7 @@ import {
 } from '../lib/errorReporting';
 import { initPerformanceMonitoring } from '../lib/performance';
 import { createLogger } from './logger';
+import { loadPreferences } from './preferences';
 
 export {
   collectHealthSnapshot,
@@ -65,6 +66,12 @@ let _initialised = false;
 // ─── Sentry init ──────────────────────────────────────────────────────────────
 
 function initialiseSentry(cfg: MonitoringConfig): void {
+  const prefs = loadPreferences();
+  if (prefs.diagnosticsConsent !== true) {
+    logger.info('Sentry initialization skipped: user has not granted diagnostics consent.');
+    return;
+  }
+
   if (!cfg.sentryDsn) {
     logger.warn('Sentry DSN not set – error tracking disabled.', { env: cfg.environment });
     return;
@@ -261,6 +268,15 @@ export function initMonitoring(userConfig: Partial<MonitoringConfig> = {}): void
 
   logger.info('Monitoring stack initialised', { env: cfg.environment });
 }
+
+export function revokeSentryConsent(): void {
+  logger.info('User revoked diagnostics consent, closing Sentry client.');
+  const client = Sentry.getClient();
+  if (client) {
+    client.close(2000); // 2 second flush then close
+  }
+}
+
 // ─── Sentry user context helpers ─────────────────────────────────────────────
 
 /**
@@ -402,4 +418,5 @@ export default {
   withSpan,
   captureError,
   SentryErrorBoundary,
+  revokeSentryConsent,
 };
