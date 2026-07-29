@@ -72,7 +72,7 @@ export const DigitalTwinPanel: React.FC<Props> = ({ accountAddress }) => {
             </div>
             <div className="rounded-lg bg-white/5 p-3">
               <p className="text-xs text-gray-400">Balance Impact</p>
-              <p className={	ext-lg font-bold }>
+              <p className="text-lg font-bold">
                 {result.balanceImpact}
               </p>
             </div>

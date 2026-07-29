@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 test.describe('Freighter Wallet Flows', () => {
   const freighterMockPath = path.resolve(__dirname, 'fixtures', 'freighter-mock.js');
