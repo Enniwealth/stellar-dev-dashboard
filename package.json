@@ -47,6 +47,7 @@
     "api:start": "node api/server.js"
   },
   "dependencies": {
+    "@axe-core/react": "^4.11.3",
     "@sentry/browser": "8.54.0",
     "@sentry/react": "8.54.0",
     "@tensorflow/tfjs-node": "^4.22.0",
