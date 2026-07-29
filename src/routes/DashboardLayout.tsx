@@ -105,11 +105,7 @@ const TABS: Record<string, TabComponent> = {
   security: lazyTab(() => import('../components/dashboard/SecurityDashboard')),
   dependencyManagement: lazyTab(() => import('../components/dashboard/DependencyManagement')),
   txAnalytics: TransactionAnalytics,
-  aiDescription: lazyTab(() => import('../components/dashboard/AIDescriptionPanel')),
-  contractRecommendations: lazyTab(() => import('../components/dashboard/ContractRecommendations')),
-  capacityPlanning: lazyTab(() => import('../components/dashboard/CapacityPredictionPanel')),
-  dataStorytelling: lazyTab(() => import('../components/dashboard/DataStorytelling')),
-  codeReview: lazyTab(() => import('../components/dashboard/CodeReviewAssistant')),
+  anomalyViz: lazyTab(() => import('../components/dashboard/AnomalyVisualization')),
 };
 
 function TabLoadingFallback() {

@@ -40,7 +40,7 @@ const TAB_LOADERS: Record<string, () => Promise<unknown>> = {
   liveActivity: () => import('../components/dashboard/LiveActivityFeed'),
   claimableBalances: () => import('../components/dashboard/ClaimableBalances'),
   dataExport: () => import('../components/dashboard/DataExport'),
-  personalization: () => import('../components/dashboard/PersonalizationPanel'),
+  anomalyViz: () => import('../components/dashboard/AnomalyVisualization'),
 }
 
 const preloaded = new Set<string>()
