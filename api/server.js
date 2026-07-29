@@ -8,6 +8,7 @@ import { router as transactionsRouter } from './routes/transactions.js';
 import liquidityRouter from './routes/liquidity.js';
 import liquidityPredictionRouter from './routes/liquidityPrediction.js';
 import { router as accessControlRouter } from './routes/accessControl.js';
+import { router as notificationSummariesRouter } from './routes/notificationSummaries.js';
 
 const app = express();
 const server = createServer(app);
@@ -22,6 +23,7 @@ app.use('/api/v1/transactions', oauthAuth, transactionsRouter);
 app.use('/api/v1/liquidity', liquidityRouter);
 app.use('/api/v1', liquidityPredictionRouter);
 app.use('/api/v1/access-control', oauthAuth, accessControlRouter);
+app.use('/api/v1/notification-summaries', oauthAuth, notificationSummariesRouter);
 
 // Documentation endpoint
 app.get('/api/docs', (req, res) => {
@@ -39,6 +41,7 @@ app.get('/api/docs', (req, res) => {
       '/api/v1/behavior/suggestions': 'GET - Get proactive suggestions',
       '/api/v1/behavior/personalization': 'GET - Get personalization summary',
       '/api/v1/behavior/personalization/settings': 'GET/PUT - Personalization settings',
+      '/api/v1/notification-summaries': 'GET - Retrieve notification summaries',
       '/ws': 'WebSocket - Subscribe to real-time updates'
     }
   });

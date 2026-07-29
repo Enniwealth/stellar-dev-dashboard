@@ -65,13 +65,15 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'portfolioAnalytics', label: 'Portfolio Analytics', icon: '📊' },
   { id: 'autonomousTrading', label: 'Trading Agent', icon: '🤖' },
   { id: 'charts', label: 'Charts', icon: '▤' },
+  { id: 'dataStorytelling', label: 'Data Stories', icon: '📖' },
   { id: 'analytics', label: 'Analytics', icon: '◍' },
   { id: 'designSystem', label: 'Design System', icon: '◈' },
   { id: 'featureFlags', label: 'Flags', icon: '🚩' },
   { id: 'codeReview', label: 'Code Review', icon: '🔍' },
   { id: 'txPatterns', label: 'AI Patterns', icon: '🧠' },
+  { id: 'aiDescription', label: 'AI Descriptions', icon: '✨' },
+  { id: 'contractRecommendations', label: 'Contract AI', icon: '💡' },
   { id: 'capacityPlanning', label: 'Capacity AI', icon: '📈' },
-  { id: 'backupOptimizer', label: 'Backup AI', icon: '💾' },
   { id: 'systemHealth', label: 'Health', icon: '⚕' },
   { id: 'monitoringDashboards', label: 'Monitoring', icon: '📊' },
   { id: 'throughputForecast', label: 'Forecast', icon: '📈' },
@@ -82,7 +84,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'audit', label: 'Audit', icon: '⊟' },
   { id: 'personalization', label: 'AI Personalization', icon: '🧠' },
   { id: 'security', label: 'Security', icon: '🛡️' },
-  { id: 'errorRecovery', label: 'Recovery', icon: '🧠' },
+  { id: 'dependencyManagement', label: 'Dependencies', icon: '📦' },
 ];
 
 export interface SidebarProps {

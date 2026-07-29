@@ -35,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "portfolio", label: "Portfolio", icon: "◐" },
   { id: "autonomousTrading", label: "Trading Agent", icon: "🤖" },
   { id: "charts", label: "Charts", icon: "▤" },
+  { id: "dataStorytelling", label: "Data Stories", icon: "📖" },
   { id: "designSystem", label: "Design System", icon: "◈" },
   { id: "featureFlags", label: "Flags", icon: "🚩" },
   { id: "collaboration", label: "Collaboration", icon: "◌" },
@@ -42,7 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "contractRecommendations", label: "Contract AI", icon: "💡" },
   { id: "personalization", label: "AI Personalization", icon: "🧠" },
   { id: "security", label: "Security", icon: "🛡️" },
-  { id: "errorRecovery", label: "Recovery", icon: "🧠" },
+  { id: "dependencyManagement", label: "Dependencies", icon: "📦" },
 ];
 
 /**

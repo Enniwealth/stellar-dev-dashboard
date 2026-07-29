@@ -1,5 +1,5 @@
 import { OPERATION_LABELS } from './stellar'
-import { priorityScoringService } from './priorityScoring'
+import { generateTransactionDescription } from './aiTransactionDescription'
 
 // ─── Operators ─────────────────────────────────────────────────────────────────
 
@@ -132,6 +132,21 @@ registry.registerMany([
     defaultOperator: 'icontains',
     placeholder: 'Search memo text',
     extract: (tx) => tx.memo || '',
+  },
+  {
+    key: 'tx.description',
+    label: 'AI Description',
+    shortLabel: 'AI Description',
+    scope: 'transaction',
+    type: 'string',
+    operators: ['icontains', 'eq', 'exists', 'regex', 'startsWith'],
+    defaultOperator: 'icontains',
+    placeholder: 'Search AI transaction description',
+    extract: (tx) => {
+      if (tx.ai_description) return tx.ai_description
+      const gen = generateTransactionDescription(tx)
+      return gen.description
+    },
   },
   {
     key: 'tx.memoType',
