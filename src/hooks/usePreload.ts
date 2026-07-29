@@ -26,6 +26,7 @@ const TAB_LOADERS: Record<string, () => Promise<unknown>> = {
   explorers: () => import('../components/dashboard/ExplorerEmbed'),
   realtime: () => import('../components/dashboard/RealTimeLedger'),
   charts: () => import('../components/dashboard/ChartsTab'),
+  dataStorytelling: () => import('../components/dashboard/DataStorytelling'),
   assets: () => import('../components/assets'),
   multisig: () => import('../components/multisig'),
   analytics: () => import('../components/dashboard/Analytics'),
