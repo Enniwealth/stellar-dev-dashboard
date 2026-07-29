@@ -474,7 +474,6 @@ export default function PersonalizationPanel() {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '999px',
-                    border: 'none',
                     background: profile.learningEnabled ? 'var(--green-glow)' : 'var(--bg-elevated)',
                     color: profile.learningEnabled ? 'var(--green)' : 'var(--text-muted)',
                     cursor: 'pointer',

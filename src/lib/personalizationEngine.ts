@@ -322,3 +322,200 @@ export async function clearPersonalizationData(userId: string): Promise<void> {
   resetProfile(userId)
   resetSettings(userId)
 }
+
+// ─── Profile-based personalization API (used by PersonalizationPanel) ─────────
+
+const PROFILE_STORAGE_KEY = 'stellar_personalization_profile'
+
+export interface PersonalizationProfile {
+  /** Total number of recorded interactions */
+  interactionCount: number
+  /** Map of tab name → visit count */
+  tabVisits: Record<string, number>
+  /** Map of widget type → usage count */
+  widgetUsage: Record<string, number>
+  /** Dismissed widget suggestions */
+  dismissedWidgets: string[]
+  /** Accepted widget suggestions */
+  acceptedWidgets: string[]
+  /** Hourly activity counts (index = hour 0–23) */
+  hourlyActivity: number[]
+  /** Whether learning mode is active */
+  learningEnabled: boolean
+  /** How much transparency to show: full / summary / minimal */
+  transparencyLevel: 'full' | 'summary' | 'minimal'
+  /** ISO timestamp of last update */
+  lastUpdated: string
+}
+
+export interface PersonalizationStats {
+  totalInteractions: number
+  uniqueTabsVisited: number
+  uniqueWidgetsUsed: number
+  suggestionsAccepted: number
+  estimatedEfficiencyGain: number
+  topTabs: Array<{ tab: string; count: number }>
+  topWidgets: Array<{ widget: string; count: number }>
+}
+
+export interface WidgetScore {
+  widgetType: string
+  score: number
+  reason: string
+}
+
+function defaultProfile(): PersonalizationProfile {
+  return {
+    interactionCount: 0,
+    tabVisits: {},
+    widgetUsage: {},
+    dismissedWidgets: [],
+    acceptedWidgets: [],
+    hourlyActivity: new Array(24).fill(0),
+    learningEnabled: true,
+    transparencyLevel: 'full',
+    lastUpdated: new Date().toISOString(),
+  }
+}
+
+export async function loadPersonalizationProfile(): Promise<PersonalizationProfile> {
+  try {
+    const raw = localStorage.getItem(PROFILE_STORAGE_KEY)
+    if (raw) return { ...defaultProfile(), ...JSON.parse(raw) }
+  } catch {
+    // ignore parse errors
+  }
+  return defaultProfile()
+}
+
+export async function savePersonalizationProfile(profile: PersonalizationProfile): Promise<void> {
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ ...profile, lastUpdated: new Date().toISOString() }))
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export async function resetPersonalization(): Promise<PersonalizationProfile> {
+  const fresh = defaultProfile()
+  await savePersonalizationProfile(fresh)
+  return fresh
+}
+
+export async function recordInteraction(
+  profile: PersonalizationProfile,
+  event: { type: string; target: string; metadata?: Record<string, unknown> },
+): Promise<PersonalizationProfile> {
+  if (!profile.learningEnabled) return profile
+  const updated: PersonalizationProfile = {
+    ...profile,
+    interactionCount: profile.interactionCount + 1,
+    tabVisits:
+      event.type === 'tab_visit'
+        ? { ...profile.tabVisits, [event.target]: (profile.tabVisits[event.target] ?? 0) + 1 }
+        : profile.tabVisits,
+    widgetUsage:
+      event.type === 'widget_use'
+        ? { ...profile.widgetUsage, [event.target]: (profile.widgetUsage[event.target] ?? 0) + 1 }
+        : profile.widgetUsage,
+  }
+  const hour = new Date().getHours()
+  const hourly = [...updated.hourlyActivity]
+  hourly[hour] = (hourly[hour] ?? 0) + 1
+  updated.hourlyActivity = hourly
+  await savePersonalizationProfile(updated)
+  return updated
+}
+
+export async function recordSuggestionAccepted(
+  profile: PersonalizationProfile,
+  widgetType: string,
+): Promise<PersonalizationProfile> {
+  const updated: PersonalizationProfile = {
+    ...profile,
+    acceptedWidgets: [...new Set([...profile.acceptedWidgets, widgetType])],
+    dismissedWidgets: profile.dismissedWidgets.filter(w => w !== widgetType),
+  }
+  await savePersonalizationProfile(updated)
+  return updated
+}
+
+export async function recordSuggestionDismissed(
+  profile: PersonalizationProfile,
+  widgetType: string,
+): Promise<PersonalizationProfile> {
+  const updated: PersonalizationProfile = {
+    ...profile,
+    dismissedWidgets: [...new Set([...profile.dismissedWidgets, widgetType])],
+    acceptedWidgets: profile.acceptedWidgets.filter(w => w !== widgetType),
+  }
+  await savePersonalizationProfile(updated)
+  return updated
+}
+
+export function computePersonalizationStats(profile: PersonalizationProfile): PersonalizationStats {
+  const topTabs = Object.entries(profile.tabVisits)
+    .sort((a, b) => b[1] - a[1])
+    .map(([tab, count]) => ({ tab, count }))
+
+  const topWidgets = Object.entries(profile.widgetUsage)
+    .sort((a, b) => b[1] - a[1])
+    .map(([widget, count]) => ({ widget, count }))
+
+  const uniqueTabsVisited = Object.keys(profile.tabVisits).length
+  const uniqueWidgetsUsed = Object.keys(profile.widgetUsage).length
+
+  return {
+    totalInteractions: profile.interactionCount,
+    uniqueTabsVisited,
+    uniqueWidgetsUsed,
+    suggestionsAccepted: profile.acceptedWidgets.length,
+    estimatedEfficiencyGain: Math.min(95, Math.round(profile.interactionCount / 10)),
+    topTabs,
+    topWidgets,
+  }
+}
+
+export function computeWidgetRecommendations(
+  profile: PersonalizationProfile,
+  availableTypes: string[],
+  _currentWidgets: string[],
+): WidgetScore[] {
+  return availableTypes
+    .filter(type => !profile.dismissedWidgets.includes(type))
+    .map(type => {
+      const usage = profile.widgetUsage[type] ?? 0
+      const accepted = profile.acceptedWidgets.includes(type)
+      const score = Math.min(100, (usage * 10) + (accepted ? 30 : 0) + Math.random() * 20)
+      const reason =
+        usage > 5
+          ? `You've used this widget ${usage} times — it fits your workflow well.`
+          : accepted
+          ? 'Previously added to your layout.'
+          : 'Might complement your existing setup.'
+      return { widgetType: type, score, reason }
+    })
+    .sort((a, b) => b.score - a.score)
+}
+
+export function identifyPeakUsageHours(profile: PersonalizationProfile): number[] {
+  return profile.hourlyActivity
+    .map((count, hour) => ({ hour, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+    .filter(e => e.count > 0)
+    .map(e => e.hour)
+}
+
+export function detectPowerUser(profile: PersonalizationProfile): boolean {
+  return profile.interactionCount > 100 || Object.keys(profile.tabVisits).length > 6
+}
+
+export function detectCasualUser(profile: PersonalizationProfile): boolean {
+  return profile.interactionCount < 20
+}
+
+export function computeLayoutCompactnessScore(profile: PersonalizationProfile): number {
+  const widgetCount = Object.keys(profile.widgetUsage).length
+  return Math.min(1, widgetCount / 8)
+}
