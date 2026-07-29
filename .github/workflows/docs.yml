@@ -57,6 +57,29 @@ jobs:
           retention-days: 1
 
   # ─────────────────────────────────────────────
+  # Detect documentation drift (broken paths,
+  # scripts, commands, and links)
+  # ─────────────────────────────────────────────
+  validate-docs-drift:
+    name: Validate Docs Drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Validate documentation drift
+        run: npm run docs:validate-drift
+
+  # ─────────────────────────────────────────────
   # Validate example scripts run without errors
   # ─────────────────────────────────────────────
   validate-examples:

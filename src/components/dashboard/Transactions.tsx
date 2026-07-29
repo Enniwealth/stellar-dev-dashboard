@@ -123,7 +123,7 @@ import { useAddressLabels } from '../../hooks/useAddressLabels'
 import { generateTransactionDescription } from '../../lib/aiTransactionDescription'
 
 const VIRTUAL_SCROLL_THRESHOLD = 200
-const PAGE_SIZE = 100
+const PAGE_SIZE = 50
 
 function normalizeSearch(value) {
   return String(value || '').toLowerCase().trim()
@@ -166,6 +166,38 @@ function flattenOperation(op) {
     asset_code: op.asset_code || 'XLM',
     asset_issuer: op.asset_issuer || '',
   }
+}
+
+function InfiniteScrollSentinel({ onIntersect, hasMore, loading, label = 'items' }: { onIntersect: () => void, hasMore: boolean, loading: boolean, label?: string }) {
+  const sentinelRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!hasMore || loading) return
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        onIntersect()
+      }
+    }, { rootMargin: '200px' })
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [onIntersect, hasMore, loading])
+
+  return (
+    <div ref={sentinelRef} style={{ padding: '14px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center' }}>
+      {loading ? (
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Loading more...</span>
+      ) : hasMore ? (
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Scroll for more</span>
+      ) : (
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No more {label}</span>
+      )}
+    </div>
+  )
 }
 
 function LoadingRows({ count, height }) {
@@ -596,29 +628,12 @@ export default function Transactions() {
                   </div>
                 </div>
               ))}
-              <div style={{ padding: '14px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center' }}>
-                {txHasMore || txPagingLoading ? (
-                  <button
-                    onClick={handleLoadMoreTransactions}
-                    disabled={txPagingLoading}
-                    style={{
-                      padding: '8px 14px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--border-bright)',
-                      background: txPagingLoading ? 'var(--bg-elevated)' : 'transparent',
-                      color: 'var(--text-secondary)',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '12px',
-                      cursor: txPagingLoading ? 'not-allowed' : 'pointer',
-                      opacity: txPagingLoading ? 0.8 : 1,
-                    }}
-                  >
-                    {txPagingLoading ? 'Loading...' : 'Load More'}
-                  </button>
-                ) : (
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No more transactions</span>
-                )}
-              </div>
+              <InfiniteScrollSentinel 
+                onIntersect={handleLoadMoreTransactions}
+                hasMore={txHasMore}
+                loading={txPagingLoading}
+                label="transactions"
+              />
             </>
           )}
         </div>
@@ -897,29 +912,12 @@ export default function Transactions() {
                   </div>
                 </div>
               ))}
-              <div style={{ padding: '14px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center' }}>
-                {opsHasMore || opsPagingLoading ? (
-                  <button
-                    onClick={handleLoadMoreOperations}
-                    disabled={opsPagingLoading}
-                    style={{
-                      padding: '8px 14px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--border-bright)',
-                      background: opsPagingLoading ? 'var(--bg-elevated)' : 'transparent',
-                      color: 'var(--text-secondary)',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '12px',
-                      cursor: opsPagingLoading ? 'not-allowed' : 'pointer',
-                      opacity: opsPagingLoading ? 0.8 : 1,
-                    }}
-                  >
-                    {opsPagingLoading ? 'Loading...' : 'Load More'}
-                  </button>
-                ) : (
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No more operations</span>
-                )}
-              </div>
+              <InfiniteScrollSentinel 
+                onIntersect={handleLoadMoreOperations}
+                hasMore={opsHasMore}
+                loading={opsPagingLoading}
+                label="operations"
+              />
             </>
           )}
         </div>

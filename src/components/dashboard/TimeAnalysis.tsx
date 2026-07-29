@@ -300,6 +300,7 @@ export default function TimeAnalysis() {
             <Tooltip contentStyle={CUSTOM_TOOLTIP} formatter={(v) => [v, 'Operations']} />
             <Bar dataKey="count" fill={COLORS.indigo} radius={[2, 2, 0, 0]} />
           </BarChart>
+        </ResponsiveContainer>
       </ChartCard>
 
       <DataAggregationOptimizer

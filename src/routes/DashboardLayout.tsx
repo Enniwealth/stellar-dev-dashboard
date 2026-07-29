@@ -34,6 +34,7 @@ import KeyboardNavigation from '../components/accessibility/KeyboardNavigation';
 import ThemeToggle from '../components/layout/ThemeToggle';
 import OfflineBanner from '../components/layout/OfflineBanner';
 import PWAInstallBanner from '../components/PWAInstallBanner';
+import SWUpdatePrompt from '../components/SWUpdatePrompt';
 import { useSwipeGesture } from '../hooks/useSwipeGesture';
 import DevToolbar from '../components/dashboard/DevToolbar';
 import DebugAssistantButton from '../components/debug/DebugAssistantButton';
@@ -105,11 +106,7 @@ const TABS: Record<string, TabComponent> = {
   security: lazyTab(() => import('../components/dashboard/SecurityDashboard')),
   dependencyManagement: lazyTab(() => import('../components/dashboard/DependencyManagement')),
   txAnalytics: TransactionAnalytics,
-  aiDescription: lazyTab(() => import('../components/dashboard/AIDescriptionPanel')),
-  contractRecommendations: lazyTab(() => import('../components/dashboard/ContractRecommendations')),
-  capacityPlanning: lazyTab(() => import('../components/dashboard/CapacityPredictionPanel')),
-  dataStorytelling: lazyTab(() => import('../components/dashboard/DataStorytelling')),
-  codeReview: lazyTab(() => import('../components/dashboard/CodeReviewAssistant')),
+  anomalyViz: lazyTab(() => import('../components/dashboard/AnomalyVisualization')),
 };
 
 function TabLoadingFallback() {
@@ -388,6 +385,7 @@ export default function DashboardLayout() {
     <ErrorBoundary onRetry={handleRetry} maxRetries={3}>
       <OfflineBanner />
       <PWAInstallBanner />
+      <SWUpdatePrompt />
       <div
         style={{
           display: 'flex',

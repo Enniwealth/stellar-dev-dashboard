@@ -107,6 +107,20 @@ export function getVoiceGreeting(): string {
   return '🎤 Listening... Say a navigation command like "show me my portfolio" or "go to network stats".';
 }
 
+export function getCommandHelpText(): string {
+  return [
+    '**Available commands:**',
+    '- "Take me to portfolio" → Portfolio overview',
+    '- "Show network stats" → Network statistics',
+    '- "Go to transactions" → Transaction history',
+    '- "Open account viewer" → Account details',
+    '- "Show DEX analytics" → DEX trading data',
+    '- "Go to settings" → Settings panel',
+    '',
+    "You can also use natural language — I'll do my best to understand your intent.",
+  ].join('\n');
+}
+
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
 export function conversationReducer(
