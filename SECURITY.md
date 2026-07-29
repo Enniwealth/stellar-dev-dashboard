@@ -21,7 +21,11 @@ We enforce a strict CSP through both Nginx and React-level meta tags.
 - **Restrictions**: `'unsafe-inline'` is prohibited in production.
 - **Allowed Sources**: 
   - Scripts/Styles: `'self'`
-  - API Connections: `https://*.stellar.org`, `https://api.coingecko.com`
+  - API Connections/Wallets: `https://*.stellar.org`, `wss://*.stellar.org`, `https://*.sorobanrpc.com`, `https://api.coingecko.com`, `wss://*.walletconnect.com`, `https://*.walletconnect.com`, `https://*.walletconnect.org`, `https://albedo.link`, `https://*.albedo.link`
+  - Inline Scripts: Allowed via strict SHA-256 hash validation for the theme initialization script.
+
+### Adding New Wallet or API Endpoints
+To add a new endpoint or wallet integration, update the `Content-Security-Policy` header in `nginx.conf` and the corresponding meta tag in `index.html`. Add the domains to `connect-src` (for APIs/WebSocket) or `frame-src` (for iframes).
 
 ### 2. Automated Guardrails
 - **Dependabot**: Monitors `npm` and `github-actions` ecosystems daily for updates.
