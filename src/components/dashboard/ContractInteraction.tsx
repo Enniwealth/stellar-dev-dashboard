@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useStore } from "../../lib/store";
 import { invokeContractFunction, parseContractWasm } from "../../lib/contractInvoker";
 import { simulateContractCall, isValidContractId } from "../../lib/stellar";
@@ -6,7 +6,11 @@ import { addContractInteraction } from "../../lib/storage";
 import { generateId } from "../../lib/notifications";
 import ContractHistory from "./ContractHistory";
 import { useContractRecommendations } from "../../hooks/useContractRecommendations";
+import { useGasPrediction } from "../../hooks/useGasPrediction";
+import { usePreferences } from "../../hooks/usePreferences";
+import { getContractInteractions } from "../../lib/storage";
 import { Sparkles, AlertTriangle, AlertCircle, HelpCircle } from "lucide-react";
+import GasCostEstimator from "./GasCostEstimator";
 
 const ARGUMENT_TYPES = [
   { value: 'string', label: 'String' },
@@ -371,6 +375,13 @@ export default function ContractInteraction() {
     currentFunction: form.functionName,
   });
 
+  const { prediction: gasPrediction, loading: gasLoading, recordActual } = useGasPrediction({
+    contractId: form.contractId.trim() || undefined,
+    functionName: form.functionName.trim() || undefined,
+    args: form.args.filter(a => a.value.trim() !== ''),
+    enabled: !!(form.contractId.trim() && form.functionName.trim()),
+  });
+
   const currentFuncMeta = contractFunctions.find(f => f.name === form.functionName);
   const parameterDefinitions = currentFuncMeta?.parameters || [];
 
@@ -498,6 +509,14 @@ export default function ContractInteraction() {
         network,
       });
       setSimulationResult(result);
+
+      if (gasPrediction && result.cost) {
+        const resourceFee = result.footprint?.minResourceFee
+          ? parseInt(result.footprint.minResourceFee, 10)
+          : 0
+        recordActual(resourceFee || result.cost?.cpuInstructions || 0, result.cost?.cpuInstructions || 0)
+      }
+
       await recordInteraction('simulate', 'success', result, null);
     } catch (err) {
       setError(err.message || 'Simulation failed');
@@ -908,6 +927,12 @@ export default function ContractInteraction() {
           </div>
         )}
       </Panel>
+
+      {(form.contractId.trim() && form.functionName.trim()) && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
+          <GasCostEstimator prediction={gasPrediction} />
+        </div>
+      )}
 
       {simulationResult && (
         <div style={{ display: "grid", gap: "16px" }}>
