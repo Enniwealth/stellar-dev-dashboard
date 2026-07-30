@@ -410,6 +410,19 @@ UseResponsive <.. Input : "adapts width/font"
 - [Input.tsx:1-200](file://mobile/src/components/Input.tsx#L1-L200)
 
 ### Feature Parity with Web Application
+
+A structured feature parity matrix is used to track and validate support across web and mobile environments, identifying which logic can be shared safely.
+
+**Parity Matrix**
+- **Authentication**: Supported on web and mobile. Shares logic safely (e.g., JWT and session management).
+- **Transaction Builder**: Supported on web and mobile. Shares logic safely via common SDK.
+- **Biometrics**: Supported on mobile only. Utilizes native device APIs and does not share logic with web.
+- **Hardware Wallet**: Supported on web only. Relies on WebUSB which is currently unsupported in React Native.
+- **Push Notifications**: Supported on web and mobile. Uses different implementations (FCM on mobile vs Web Push API on web) and cannot share core delivery logic safely.
+
+**Code Integration**
+The parity matrix and its associated rules are implemented in `mobile/src/utils/parityMatrix.ts`. This utility includes explicit handling for invalid inputs and unsupported environments, preventing failure paths during platform-specific logic execution.
+
 - Core Features:
   - Account overview, transaction history, asset management, DEX operations, contract interaction, multisig workflows, faucet usage, network selection, settings, connection flow, and portfolio analytics are implemented as dedicated screens.
 - Shared Utilities:
