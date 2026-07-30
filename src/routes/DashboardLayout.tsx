@@ -31,6 +31,8 @@ import UserPreferences from '../components/preferences/UserPreferences';
 import NetworkIndicator from '../components/layout/NetworkIndicator';
 import MobileNavigation from '../components/layout/MobileNavigation';
 import KeyboardNavigation from '../components/accessibility/KeyboardNavigation';
+import SkipLink from '../components/accessibility/SkipLink';
+import FocusManager from '../components/accessibility/FocusManager';
 import ThemeToggle from '../components/layout/ThemeToggle';
 import OfflineBanner from '../components/layout/OfflineBanner';
 import PWAInstallBanner from '../components/PWAInstallBanner';
@@ -40,6 +42,7 @@ import DevToolbar from '../components/dashboard/DevToolbar';
 import DebugAssistantButton from '../components/debug/DebugAssistantButton';
 import DebugAssistantPanel from '../components/debug/DebugAssistantPanel';
 import ConversationPanel from '../components/conversation/ConversationPanel';
+import { useRouteFocus } from '../hooks/useRouteFocus';
 
 interface SearchResult {
   type?: string;
@@ -242,6 +245,9 @@ export default function DashboardLayout() {
   const { level, isNovice, setLevel, updateSignals } = useExpertise();
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
   const [conversationOpen, setConversationOpen] = useState<boolean>(false);
+  const preferencesTriggerRef = React.useRef<HTMLButtonElement>(null);
+
+  useRouteFocus(activeTab);
 
   useEffect(() => {
     // v2: full multi-layer cache initialization (warm, prune, SW bridge)
@@ -287,15 +293,21 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isMobileMenuOpen) {
-        setMobileMenuOpen(false);
-        addBreadcrumb('Mobile menu closed via escape key', 'user_action');
+      if (e.key === 'Escape') {
+        if (isMobileMenuOpen) {
+          setMobileMenuOpen(false);
+          addBreadcrumb('Mobile menu closed via escape key', 'user_action');
+        }
+        if (preferencesOpen) {
+          setPreferencesOpen(false);
+          preferencesTriggerRef.current?.focus();
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen, setMobileMenuOpen]);
+  }, [isMobileMenuOpen, setMobileMenuOpen, preferencesOpen, setPreferencesOpen]);
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -383,6 +395,7 @@ export default function DashboardLayout() {
 
   return (
     <ErrorBoundary onRetry={handleRetry} maxRetries={3}>
+      <SkipLink />
       <OfflineBanner />
       <PWAInstallBanner />
       <SWUpdatePrompt />
@@ -396,7 +409,13 @@ export default function DashboardLayout() {
       >
         {isMobile && <MobileHeader />}
         {isMobile ? <MobileSidebar /> : <Sidebar />}
-        <main style={getMainStyles()} ref={isMobile ? swipeAreaRef : null}>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          aria-label="Dashboard content"
+          style={getMainStyles()}
+          ref={isMobile ? swipeAreaRef : null}
+        >
           <KeyboardNavigation />
           <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ flex: 1 }}>
@@ -414,10 +433,15 @@ export default function DashboardLayout() {
               />
             </div>
             <button
+              ref={preferencesTriggerRef}
+              type="button"
               onClick={() => {
                 setPreferencesOpen(true);
                 trackFeatureInteraction('preferences');
               }}
+              aria-label="Open user preferences"
+              aria-haspopup="dialog"
+              aria-expanded={preferencesOpen}
               title="User Preferences"
               style={{
                 width: '36px',
@@ -524,6 +548,7 @@ export default function DashboardLayout() {
         <TipButton />
         {preferencesOpen && (
           <div
+            role="presentation"
             style={{
               position: 'fixed',
               inset: 0,
@@ -536,10 +561,26 @@ export default function DashboardLayout() {
               padding: '16px',
             }}
             onClick={(e) => {
-              if (e.target === e.currentTarget) setPreferencesOpen(false);
+              if (e.target === e.currentTarget) {
+                setPreferencesOpen(false);
+                preferencesTriggerRef.current?.focus();
+              }
             }}
           >
-            <UserPreferences onClose={() => setPreferencesOpen(false)} />
+            <FocusManager
+              trapFocus
+              restoreFocusOnUnmount
+              returnFocusElement={preferencesTriggerRef.current}
+            >
+              <div role="dialog" aria-modal="true" aria-label="User preferences">
+                <UserPreferences
+                  onClose={() => {
+                    setPreferencesOpen(false);
+                    preferencesTriggerRef.current?.focus();
+                  }}
+                />
+              </div>
+            </FocusManager>
           </div>
         )}
       </div>

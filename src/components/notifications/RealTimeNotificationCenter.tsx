@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import SmartNotificationCenter from './SmartNotificationCenter'
 import RealTimeNotification from './RealTimeNotification'
 import { useStore } from '../../lib/store'
 import { useSmartNotifications } from '../../hooks/useSmartNotifications'
 import { Sparkles } from 'lucide-react'
+import FocusManager from '../accessibility/FocusManager'
 
 /**
  * Slide-over panel listing every notification accumulated this session.
@@ -17,6 +18,24 @@ import { Sparkles } from 'lucide-react'
  */
 export default function RealTimeNotificationCenter({ open, onClose }) {
   const [smartMode, setSmartMode] = useState(true)
+  const triggerRef = useRef<Element | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement
+    } else if (triggerRef.current instanceof HTMLElement) {
+      triggerRef.current.focus()
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, onClose])
 
   if (!open) return null
 
@@ -32,9 +51,11 @@ export default function RealTimeNotificationCenter({ open, onClose }) {
           zIndex: 1100,
         }}
       />
-      <aside
-        role="dialog"
-        aria-label="Real-time notifications"
+      <FocusManager trapFocus restoreFocusOnUnmount returnFocusElement={triggerRef.current}>
+        <aside
+          role="dialog"
+          aria-modal="true"
+          aria-label="Real-time notifications"
         style={{
           position: 'fixed',
           top: 0,
@@ -78,6 +99,8 @@ export default function RealTimeNotificationCenter({ open, onClose }) {
             <button
               type="button"
               onClick={() => setSmartMode(!smartMode)}
+              aria-label={smartMode ? 'Switch to classic notification view' : 'Switch to smart notification view'}
+              aria-pressed={smartMode}
               title={smartMode ? 'Switch to classic view' : 'Switch to smart view'}
               style={{
                 background: smartMode ? 'var(--cyan-glow-sm)' : 'transparent',
@@ -116,7 +139,8 @@ export default function RealTimeNotificationCenter({ open, onClose }) {
         </header>
 
         {smartMode ? <SmartView /> : <ClassicView />}
-      </aside>
+        </aside>
+      </FocusManager>
     </>
   )
 }
