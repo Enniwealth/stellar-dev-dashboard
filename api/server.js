@@ -9,6 +9,7 @@ import liquidityRouter from './routes/liquidity.js';
 import liquidityPredictionRouter from './routes/liquidityPrediction.js';
 import { router as accessControlRouter } from './routes/accessControl.js';
 import { router as notificationSummariesRouter } from './routes/notificationSummaries.js';
+import { router as gasPredictionRouter } from './routes/gasPrediction.js';
 
 const app = express();
 const server = createServer(app);
@@ -24,6 +25,7 @@ app.use('/api/v1/liquidity', liquidityRouter);
 app.use('/api/v1', liquidityPredictionRouter);
 app.use('/api/v1/access-control', oauthAuth, accessControlRouter);
 app.use('/api/v1/notification-summaries', oauthAuth, notificationSummariesRouter);
+app.use('/api/v1', gasPredictionRouter);
 
 // Documentation endpoint
 app.get('/api/docs', (req, res) => {
@@ -42,6 +44,10 @@ app.get('/api/docs', (req, res) => {
       '/api/v1/behavior/personalization': 'GET - Get personalization summary',
       '/api/v1/behavior/personalization/settings': 'GET/PUT - Personalization settings',
       '/api/v1/notification-summaries': 'GET - Retrieve notification summaries',
+      '/api/v1/gas/predict': 'POST - Predict gas cost for contract call',
+      '/api/v1/gas/record': 'POST - Record actual gas cost for accuracy',
+      '/api/v1/gas/metrics': 'GET - Gas prediction accuracy metrics',
+      '/api/v1/gas/thresholds': 'GET/POST - Cost threshold configuration',
       '/ws': 'WebSocket - Subscribe to real-time updates'
     }
   });
