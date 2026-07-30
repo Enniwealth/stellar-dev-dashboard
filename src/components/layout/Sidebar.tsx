@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../lib/store';
 import CopyableValue from '../dashboard/CopyableValue';
@@ -7,6 +7,7 @@ import { getActiveProfile } from '../../lib/userPreferences';
 import { preloadTab } from '../../hooks/usePreload';
 import { useAdaptiveComponents } from '../../hooks/useAdaptiveComponents';
 import { useExpertiseTracking } from '../../hooks/useExpertiseTracking';
+import { useSidebarArrowNav } from '../../hooks/useSidebarArrowNav';
 import ExpertiseBadge from '../expertise/ExpertiseBadge';
 import ExpertiseProgressPanel from '../expertise/ExpertiseProgressPanel';
 
@@ -118,6 +119,9 @@ export default function Sidebar({ isMobile = false }: SidebarProps) {
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [customHeaderName, setCustomHeaderName] = useState<string>('');
   const [customHeaderValue, setCustomHeaderValue] = useState<string>('');
+  const asideRef = useRef<HTMLElement>(null);
+
+  useSidebarArrowNav(asideRef, !isMobile || isMobileMenuOpen);
 
   useEffect(() => {
     if (network === 'custom') {
@@ -208,6 +212,7 @@ export default function Sidebar({ isMobile = false }: SidebarProps) {
       )}
 
       <aside
+        ref={asideRef}
         style={sidebarStyles}
         aria-label="Main navigation"
         id="sidebar"
@@ -410,6 +415,7 @@ export default function Sidebar({ isMobile = false }: SidebarProps) {
               return (
                 <li key={item.id} role="presentation">
                   <button
+                    type="button"
                     onClick={() => !isDisabled && item.id && handleNavClick(item.id)}
                     disabled={isDisabled}
                     className="touch-target"
