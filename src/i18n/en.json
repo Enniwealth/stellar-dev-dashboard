@@ -26,7 +26,13 @@
         "ok": "OK",
         "retry": "Retry",
         "noData": "No data available",
-        "notAvailable": "N/A"
+        "notAvailable": "N/A",
+        "offline": "Offline",
+        "online": "Online",
+        "cachedData": "Cached data",
+        "liveData": "Live data",
+        "staleData": "Stale cached data",
+        "writesDisabled": "Writes disabled — reconnect to submit"
     },
     "nav": {
         "overview": "Overview",
@@ -329,5 +335,24 @@
             "description": "These technical terms are never machine-translated — they are always preserved verbatim to ensure accuracy across all languages.",
             "more": "more terms protected"
         }
+    },
+    "offline": {
+        "title": "Offline mode",
+        "banner": "You are offline. Displaying last-known cached data.",
+        "bannerStale": "You are offline. Cached data may be stale — reconnect to refresh.",
+        "bannerAccount": "Account data is cached. Write actions are disabled until reconnected.",
+        "writesBlocked": "Network write unavailable",
+        "writesBlockedDetail": "This action requires a live network connection. Please reconnect and try again.",
+        "cachedBadge": "CACHED",
+        "staleBadge": "STALE",
+        "liveBadge": "LIVE",
+        "dataSourceLive": "Live network data",
+        "dataSourceCache": "Cached data (last known good)",
+        "dataSourceCacheStale": "Stale cached data — older than TTL",
+        "faucetDisabled": "Faucet unavailable offline",
+        "builderDisabled": "Simulation unavailable offline",
+        "builderXdrStillWorks": "XDR export still works — it is a local-only operation.",
+        "queueHint": "Queued operations will replay when connectivity returns.",
+        "lastCached": "Last cached"
     }
 }
