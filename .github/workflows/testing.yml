@@ -43,7 +43,7 @@ jobs:
         run: npm run build
 
       - name: Restore visual baselines
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: tests/e2e/snapshots
           key: visual-snapshots-${{ matrix.viewport }}-${{ github.base_ref || github.ref_name }}
@@ -66,7 +66,7 @@ jobs:
 
       - name: Save baselines
         if: success()
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: tests/e2e/snapshots
           key: visual-snapshots-${{ matrix.viewport }}-${{ github.base_ref || github.ref_name }}
