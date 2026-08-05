@@ -30,6 +30,7 @@ import {
 import advancedSearchService from '../../lib/advancedSearch.js';
 import auditTrail from '../../lib/auditTrail.js';
 import { format } from 'date-fns';
+import ConversationalSearch from '../search/ConversationalSearch';
 import SemanticSearchPanel from '../search/SemanticSearchPanel';
 
 export default function AdvancedSearch() {
@@ -50,6 +51,8 @@ export default function AdvancedSearch() {
   const [alertCron, setAlertCron] = useState('0 * * * *');
   const [shareToken, setShareToken] = useState('');
   const [semanticMode, setSemanticMode] = useState(false);
+  const [conversationalSearchText, setConversationalSearchText] = useState('');
+  const [intentSummary, setIntentSummary] = useState<string | null>(null);
 
   const [filters, setFilters] = useState({
     dateRange: { start: '', end: '' },
@@ -167,70 +170,109 @@ export default function AdvancedSearch() {
     setSearchAnalytics(advancedSearchService.getSearchAnalytics());
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim() && !hasActiveFilters()) {
+  const handleSearch = async (
+    overrideQuery?: string,
+    overrideFilters?: any,
+    overrideTypes?: string[]
+  ) => {
+    const queryText = (overrideQuery ?? searchQuery).trim();
+    const activeFilters = overrideFilters ?? filters;
+
+    if (!queryText && !hasActiveFilters(activeFilters)) {
       return;
     }
 
     setLoading(true);
     try {
       const query = {
-        text: searchQuery.trim(),
-        types: selectedTypes,
-        filters: buildFilters(),
+        text: queryText,
+        types: overrideTypes ?? selectedTypes,
+        filters: buildFilters(activeFilters),
         sort,
         page: pagination.page,
-        limit: pagination.limit
+        limit: pagination.limit,
       };
 
       const results = advancedSearchService.search(query);
       setSearchResults(results);
 
       auditTrail.logUserAction('Performed advanced search', {
-        query: searchQuery.trim(),
-        types: selectedTypes,
+        query: queryText,
+        types: overrideTypes ?? selectedTypes,
         resultCount: results.total,
-        searchTime: results.searchTime
+        searchTime: results.searchTime,
       });
       loadData();
 
     } catch (error) {
-      auditTrail.logError(error, { operation: 'advancedSearch', query: searchQuery });
+      auditTrail.logError(error, { operation: 'advancedSearch', query: queryText });
       console.error('Search failed:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const buildFilters = () => {
-    const builtFilters = {};
-    
-    if (filters.dateRange.start) {
-      builtFilters.dateRange = { ...builtFilters.dateRange, start: new Date(filters.dateRange.start).getTime() };
+  const handleConversationalQuery = async (query: string, parsed: { filters: any; searchTerms: string[]; intent: any }) => {
+    setConversationalSearchText(query);
+    setIntentSummary(`Detected ${parsed.intent.type} intent`);
+    setSearchQuery(query);
+
+    const newFilters = {
+      ...filters,
+      assetType: parsed.filters.assets?.[0] ?? filters.assetType,
+      addressFilter: parsed.filters.addresses?.[0] ?? filters.addressFilter,
+      amountRange: {
+        min: parsed.filters.amounts?.min ?? filters.amountRange.min,
+        max: parsed.filters.amounts?.max ?? filters.amountRange.max,
+      },
+      memoFilter: filters.memoFilter,
+      statusFilter: filters.statusFilter,
+      networkFilter: filters.networkFilter,
+      dateRange: {
+        start: parsed.filters.dateRange?.start ? parsed.filters.dateRange.start.toISOString().slice(0, 10) : filters.dateRange.start,
+        end: parsed.filters.dateRange?.end ? parsed.filters.dateRange.end.toISOString().slice(0, 10) : filters.dateRange.end,
+      },
+    };
+
+    setFilters(newFilters);
+    await handleSearch(query, newFilters, selectedTypes);
+  };
+
+  const buildFilters = (sourceFilters = filters) => {
+    const builtFilters: any = {};
+
+    if (sourceFilters.dateRange?.start) {
+      const start = typeof sourceFilters.dateRange.start === 'string'
+        ? new Date(sourceFilters.dateRange.start)
+        : sourceFilters.dateRange.start;
+      builtFilters.dateRange = { ...builtFilters.dateRange, start: start.getTime() };
     }
-    if (filters.dateRange.end) {
-      builtFilters.dateRange = { ...builtFilters.dateRange, end: new Date(filters.dateRange.end).getTime() };
+    if (sourceFilters.dateRange?.end) {
+      const end = typeof sourceFilters.dateRange.end === 'string'
+        ? new Date(sourceFilters.dateRange.end)
+        : sourceFilters.dateRange.end;
+      builtFilters.dateRange = { ...builtFilters.dateRange, end: end.getTime() };
     }
-    
-    if (filters.assetType) builtFilters.assetType = filters.assetType;
-    if (filters.operationType) builtFilters.operationType = filters.operationType;
-    if (filters.addressFilter) builtFilters.addressFilter = filters.addressFilter;
-    if (filters.memoFilter) builtFilters.memoFilter = filters.memoFilter;
-    if (filters.statusFilter) builtFilters.statusFilter = filters.statusFilter;
-    if (filters.networkFilter) builtFilters.networkFilter = filters.networkFilter;
-    
-    if (filters.amountRange.min) {
-      builtFilters.amountRange = { ...builtFilters.amountRange, min: parseFloat(filters.amountRange.min) };
+
+    if (sourceFilters.assetType) builtFilters.assetType = sourceFilters.assetType;
+    if (sourceFilters.operationType) builtFilters.operationType = sourceFilters.operationType;
+    if (sourceFilters.addressFilter) builtFilters.addressFilter = sourceFilters.addressFilter;
+    if (sourceFilters.memoFilter) builtFilters.memoFilter = sourceFilters.memoFilter;
+    if (sourceFilters.statusFilter) builtFilters.statusFilter = sourceFilters.statusFilter;
+    if (sourceFilters.networkFilter) builtFilters.networkFilter = sourceFilters.networkFilter;
+
+    if (sourceFilters.amountRange?.min) {
+      builtFilters.amountRange = { ...builtFilters.amountRange, min: parseFloat(sourceFilters.amountRange.min) };
     }
-    if (filters.amountRange.max) {
-      builtFilters.amountRange = { ...builtFilters.amountRange, max: parseFloat(filters.amountRange.max) };
+    if (sourceFilters.amountRange?.max) {
+      builtFilters.amountRange = { ...builtFilters.amountRange, max: parseFloat(sourceFilters.amountRange.max) };
     }
-    
+
     return builtFilters;
   };
 
-  const hasActiveFilters = () => {
-    return Object.values(filters).some(value => {
+  const hasActiveFilters = (sourceFilters = filters) => {
+    return Object.values(sourceFilters).some(value => {
       if (typeof value === 'object' && value !== null) {
         return Object.values(value).some(v => v !== '');
       }
@@ -342,6 +384,18 @@ export default function AdvancedSearch() {
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
           Global search across transactions, operations, contracts, and accounts
         </div>
+      </div>
+
+      <div style={{ padding: '20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
+        <ConversationalSearch
+          onQuerySubmit={handleConversationalQuery}
+          placeholder="Ask natural language queries like 'Find payments over 1000 XLM last month'"
+        />
+        {intentSummary && (
+          <div style={{ marginTop: '14px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            {intentSummary}
+          </div>
+        )}
       </div>
 
       {/* Semantic mode toggle */}
@@ -919,6 +973,7 @@ export default function AdvancedSearch() {
           </div>
         </div>
       )}
+      {/* end keyword search bar */}
 
 
       {/* Search Results */}
