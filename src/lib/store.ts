@@ -239,8 +239,10 @@ export interface StoreState {
   walletConnected: boolean
   walletType: string | null
   walletPublicKey: string | null
+  walletSessionRevokedReason: string | null
   setWalletConnected: (connected: boolean, type?: string | null, publicKey?: string | null) => void
   disconnectWallet: () => void
+  revokeWalletSession: (reason?: string) => void
 
   notifications: Notification[]
   notificationHistory: Notification[]
@@ -570,9 +572,32 @@ export const useStore = create<StoreState>((set) => ({
   walletConnected: false,
   walletType: null,
   walletPublicKey: null,
+  walletSessionRevokedReason: null,
   setWalletConnected: (connected, type = null, publicKey = null) =>
-    set({ walletConnected: connected, walletType: type, walletPublicKey: publicKey }),
-  disconnectWallet: () => set({ walletConnected: false, walletType: null, walletPublicKey: null }),
+    set({
+      walletConnected: connected,
+      walletType: type,
+      walletPublicKey: publicKey,
+      walletSessionRevokedReason: connected ? null : get().walletSessionRevokedReason,
+    }),
+  disconnectWallet: () =>
+    set({
+      walletConnected: false,
+      walletType: null,
+      walletPublicKey: null,
+      walletSessionRevokedReason: null,
+    }),
+  revokeWalletSession: (reason = 'session_revoked') =>
+    set({
+      walletConnected: false,
+      walletType: null,
+      walletPublicKey: null,
+      walletSessionRevokedReason: reason,
+      connectedAddress: null,
+      accountData: null,
+      accountLoading: false,
+      accountError: null,
+    }),
 
   notifications: [],
   notificationHistory: [],
